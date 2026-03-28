@@ -12,17 +12,23 @@ from dd_web.runtime import DoubleDigitsService
 
 
 def _parse_bool(value: object) -> bool:
+    """Interpret common string and numeric tokens as booleans."""
+
     if isinstance(value, bool):
         return value
     return str(value or "").strip() not in {"", "0", "false", "False", "no", "No"}
 
 
 def _normalize_base_url(value: str) -> str:
+    """Normalize the configured AIX hub base URL for footer/navigation links."""
+
     raw = str(value or "").strip()
     return raw or "/"
 
 
 def _aix_page_url(base_url: str, path: str) -> str:
+    """Build one AIX-owned page URL from the configured hub base URL."""
+
     base = _normalize_base_url(base_url)
     if base == "/":
         return path
@@ -30,6 +36,8 @@ def _aix_page_url(base_url: str, path: str) -> str:
 
 
 def create_app(config: dict | None = None) -> Flask:
+    """Create the standalone Double-digits Flask application."""
+
     root = Path(__file__).resolve().parents[1]
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_mapping(

@@ -13,6 +13,8 @@ from dd_core.render import compose_arithmetic, compose_pair, number_to_image, op
 
 
 def get_results(left_digit: int, right_digit: int, operator: str) -> dict[str, Any]:
+    """Return the deterministic arithmetic result metadata for one scene."""
+
     left = int(left_digit)
     right = int(right_digit)
     if operator == "add":
@@ -35,10 +37,14 @@ def get_results(left_digit: int, right_digit: int, operator: str) -> dict[str, A
 
 
 def doubleDigits(left_digit: int, right_digit: int, *, left_variant: int = 0, right_variant: int = 0) -> np.ndarray:
+    """Compose two digit tiles into one two-digit scene image."""
+
     return compose_pair(digit_variant(left_digit, left_variant), digit_variant(right_digit, right_variant))
 
 
 def getDoubleDigits(how_many: int = 6) -> list[dict[str, Any]]:
+    """Return a deterministic slice of curated two-digit examples."""
+
     items = []
     for index in range(int(how_many)):
         spec = CURATED_EXAMPLES[DOUBLE_LEVEL][index % len(CURATED_EXAMPLES[DOUBLE_LEVEL])]
@@ -47,6 +53,8 @@ def getDoubleDigits(how_many: int = 6) -> list[dict[str, Any]]:
 
 
 def getOperator(operator: str) -> np.ndarray:
+    """Render one operator glyph tile for arithmetic scenes."""
+
     return operator_canvas(operator)
 
 
@@ -60,6 +68,8 @@ class Example:
     explanation: str
 
     def to_summary(self) -> dict[str, Any]:
+        """Serialize one example into the API summary shape."""
+
         return {
             "id": self.id,
             "level": self.level,
@@ -74,6 +84,8 @@ class ExampleCatalog:
     """Build guided examples and structured scenarios for the Double-digits lab."""
 
     def list_examples(self, level: str, *, count: int | None = None) -> list[dict[str, Any]]:
+        """List curated examples for one supported level."""
+
         normalized = self._normalize_level(level)
         entries = CURATED_EXAMPLES[normalized]
         if count is not None:
@@ -81,6 +93,8 @@ class ExampleCatalog:
         return [self.example_from_spec(normalized, entry).to_summary() for entry in entries]
 
     def example_from_id(self, level: str, example_id: str) -> Example:
+        """Look up one curated example by id within the requested level."""
+
         normalized = self._normalize_level(level)
         for entry in CURATED_EXAMPLES[normalized]:
             if entry["id"] == example_id:
@@ -88,6 +102,8 @@ class ExampleCatalog:
         raise KeyError(f"Unknown example id '{example_id}' for level '{normalized}'.")
 
     def structured_example(self, level: str, payload: dict[str, Any]) -> Example:
+        """Build one synthetic example from a structured request payload."""
+
         normalized = self._normalize_level(level)
         if normalized == SINGLE_LEVEL:
             digit = int(payload.get("digit", 0))
@@ -125,6 +141,8 @@ class ExampleCatalog:
         return self.example_from_spec(normalized, spec)
 
     def example_from_spec(self, level: str, spec: dict[str, Any]) -> Example:
+        """Materialize one ``Example`` from a curated or synthetic spec."""
+
         if level == SINGLE_LEVEL:
             digit = int(spec["digit"])
             variant = int(spec.get("variant", 0))
@@ -187,10 +205,14 @@ class ExampleCatalog:
 
     @staticmethod
     def render_result_image(result: int) -> str:
+        """Render one arithmetic result value into a displayable image URI."""
+
         return to_data_uri(number_to_image(result))
 
     @staticmethod
     def _normalize_level(level: str) -> str:
+        """Validate and normalize one supported level token."""
+
         normalized = str(level or SINGLE_LEVEL).strip().lower()
         if normalized not in LEVELS:
             raise ValueError(f"Unsupported level: {level}")

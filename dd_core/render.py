@@ -14,6 +14,8 @@ from dd_core.dataset import digit_variant
 
 
 def compose_pair(left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
+    """Compose two digit tiles into one fixed-width two-digit scene."""
+
     canvas = np.zeros(DOUBLE_SCENE_SIZE, dtype=np.uint8)
     canvas[:, : DIGIT_SIZE[1]] = left_image
     canvas[:, DIGIT_SIZE[1] :] = right_image
@@ -21,6 +23,8 @@ def compose_pair(left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
 
 
 def operator_canvas(operator: str) -> np.ndarray:
+    """Render one arithmetic operator glyph onto a digit-sized canvas."""
+
     canvas = np.zeros(DIGIT_SIZE, dtype=np.uint8)
     mid = DIGIT_SIZE[0] // 2
     if operator == "add":
@@ -39,6 +43,8 @@ def operator_canvas(operator: str) -> np.ndarray:
 
 
 def compose_arithmetic(left_image: np.ndarray, operator_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
+    """Compose a left digit, operator tile, and right digit into one scene."""
+
     canvas = np.zeros(ARITHMETIC_SCENE_SIZE, dtype=np.uint8)
     canvas[:, : DIGIT_SIZE[1]] = left_image
     canvas[:, DIGIT_SIZE[1] : DIGIT_SIZE[1] * 2] = operator_image
@@ -47,6 +53,8 @@ def compose_arithmetic(left_image: np.ndarray, operator_image: np.ndarray, right
 
 
 def number_to_image(number: int, *, variants: tuple[int, int] = (0, 1)) -> np.ndarray:
+    """Render one integer value as either one or two digit tiles."""
+
     value = abs(int(number))
     digits = [value] if value < 10 else [value // 10, value % 10]
     if len(digits) == 1:
@@ -55,6 +63,8 @@ def number_to_image(number: int, *, variants: tuple[int, int] = (0, 1)) -> np.nd
 
 
 def to_data_uri(image: np.ndarray, *, scale: int = 4) -> str:
+    """Encode one grayscale image array as a PNG data URI."""
+
     pil_image = Image.fromarray(np.clip(image, 0, 255).astype(np.uint8), mode="L")
     if scale > 1:
         pil_image = pil_image.resize((pil_image.width * scale, pil_image.height * scale), resample=Image.Resampling.NEAREST)
