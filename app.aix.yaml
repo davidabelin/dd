@@ -1,0 +1,12 @@
+runtime: python314
+service: doubledigits
+entrypoint: gunicorn --worker-tmp-dir /tmp -b :$PORT run:app
+
+env_variables:
+  APP_BASE_PATH: /doubledigits
+  AIX_HUB_URL: https://aix-labs.uw.r.appspot.com/
+  DOUBLEDIGITS_MODELS_DIR: /tmp/doubledigits_models
+  DOUBLEDIGITS_DATA_DIR: /tmp/doubledigits_data
+  DOUBLEDIGITS_ARTIFACT_CACHE: "1"
+
+service_account: aix-admin@aix-labs.iam.gserviceaccount.com

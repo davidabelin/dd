@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero panel">
+  <p class="eyebrow">Guided Lab</p>
+  <h1>From one handwritten digit to two-digit composition to arithmetic scenes.</h1>
+  <p class="lede">
+    This lab migrates notebook ideas into a guided interface. Each level shows the image, the model's prediction,
+    and a visual explanation of what the baseline recognizer is doing.
+  </p>
+</section>
+
+<section class="overview-grid">
+  <article class="panel overview-card">
+    <h2>Level 1</h2>
+    <p>Single-digit recognition and class prototypes.</p>
+  </article>
+  <article class="panel overview-card">
+    <h2>Level 2</h2>
+    <p>Two digits composed side by side into one wider number image.</p>
+  </article>
+  <article class="panel overview-card">
+    <h2>Level 3</h2>
+    <p>Controlled arithmetic scenes built from two digits and an operator template.</p>
+  </article>
+</section>
+
+<section class="lab-grid">
+  <article class="panel lab-card" data-level="single">
+    <div class="lab-head">
+      <div>
+        <p class="eyebrow">Level 1</p>
+        <h2>Single-digit Lab</h2>
+      </div>
+      <button type="button" class="load-example">Load Curated Example</button>
+    </div>
+    <div class="controls">
+      <label>
+        <span>Curated Example</span>
+        <select class="example-select"></select>
+      </label>
+      <label>
+        <span>Digit</span>
+        <select class="digit-select"></select>
+      </label>
+      <label>
+        <span>Variant</span>
+        <select class="variant-select"></select>
+      </label>
+      <button type="button" class="run-structured">Run Structured Input</button>
+    </div>
+    <div class="results">
+      <div class="image-panel">
+        <img class="example-image" alt="single digit example">
+      </div>
+      <div class="text-panel">
+        <p class="prediction"></p>
+        <p class="confidence"></p>
+        <p class="explanation"></p>
+      </div>
+    </div>
+    <div class="visuals">
+      <div class="visual-group feature-maps"></div>
+      <div class="visual-group prototype"></div>
+    </div>
+  </article>
+
+  <article class="panel lab-card" data-level="double">
+    <div class="lab-head">
+      <div>
+        <p class="eyebrow">Level 2</p>
+        <h2>Two-digit Lab</h2>
+      </div>
+      <button type="button" class="load-example">Load Curated Example</button>
+    </div>
+    <div class="controls">
+      <label>
+        <span>Curated Example</span>
+        <select class="example-select"></select>
+      </label>
+      <label>
+        <span>Left Digit</span>
+        <select class="left-select"></select>
+      </label>
+      <label>
+        <span>Right Digit</span>
+        <select class="right-select"></select>
+      </label>
+      <button type="button" class="run-structured">Run Structured Input</button>
+    </div>
+    <div class="results">
+      <div class="image-panel">
+        <img class="example-image" alt="double digit example">
+      </div>
+      <div class="text-panel">
+        <p class="prediction"></p>
+        <p class="confidence"></p>
+        <p class="explanation"></p>
+      </div>
+    </div>
+    <div class="visuals">
+      <div class="visual-group feature-maps"></div>
+      <div class="visual-group prototype"></div>
+    </div>
+  </article>
+
+  <article class="panel lab-card" data-level="arithmetic">
+    <div class="lab-head">
+      <div>
+        <p class="eyebrow">Level 3</p>
+        <h2>Arithmetic Lab</h2>
+      </div>
+      <button type="button" class="load-example">Load Curated Example</button>
+    </div>
+    <div class="controls">
+      <label>
+        <span>Curated Example</span>
+        <select class="example-select"></select>
+      </label>
+      <label>
+        <span>Left Digit</span>
+        <select class="left-select"></select>
+      </label>
+      <label>
+        <span>Operator</span>
+        <select class="operator-select">
+          <option value="add">Add</option>
+          <option value="subtract">Subtract</option>
+          <option value="multiply">Multiply</option>
+        </select>
+      </label>
+      <label>
+        <span>Right Digit</span>
+        <select class="right-select"></select>
+      </label>
+      <button type="button" class="run-structured">Run Structured Input</button>
+    </div>
+    <div class="results">
+      <div class="image-panel dual">
+        <img class="example-image" alt="arithmetic example">
+        <img class="result-image" alt="predicted arithmetic result">
+      </div>
+      <div class="text-panel">
+        <p class="prediction"></p>
+        <p class="confidence"></p>
+        <p class="explanation"></p>
+      </div>
+    </div>
+    <div class="visuals">
+      <div class="visual-group feature-maps"></div>
+      <div class="visual-group prototype"></div>
+    </div>
+  </article>
+</section>
+
+<script src="{{ url_for('static', filename='js/doubledigits.js') }}" defer></script>
+{% endblock %}
