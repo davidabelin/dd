@@ -8,7 +8,7 @@ from typing import Any
 import numpy as np
 
 from dd_core.constants import ARITHMETIC_LEVEL, CURATED_EXAMPLES, DOUBLE_LEVEL, LEVELS, OPERATORS, SINGLE_LEVEL
-from dd_core.dataset import digit_variant
+from dd_core.dataset import digit_variant, load_digit_bank
 from dd_core.render import compose_arithmetic, compose_pair, number_to_image, operator_canvas, to_data_uri
 
 
@@ -140,6 +140,18 @@ class ExampleCatalog:
         }
         return self.example_from_spec(normalized, spec)
 
+    def generated_example(self, level: str, index: int) -> Example:
+        """Build one deterministic generated example for dataset export and CLI previews."""
+
+        normalized = self._normalize_level(level)
+        return self.example_from_spec(normalized, self._generated_spec(normalized, int(index)))
+
+    def generate_examples(self, level: str, count: int) -> list[Example]:
+        """Build a deterministic generated batch for one supported level."""
+
+        normalized = self._normalize_level(level)
+        return [self.generated_example(normalized, index) for index in range(max(0, int(count)))]
+
     def example_from_spec(self, level: str, spec: dict[str, Any]) -> Example:
         """Materialize one ``Example`` from a curated or synthetic spec."""
 
@@ -217,3 +229,53 @@ class ExampleCatalog:
         if normalized not in LEVELS:
             raise ValueError(f"Unsupported level: {level}")
         return normalized
+
+    @staticmethod
+    def _generated_spec(level: str, index: int) -> dict[str, Any]:
+        """Build one deterministic generated-example spec for the requested level."""
+
+        seed = max(0, int(index))
+        if level == SINGLE_LEVEL:
+            digit = seed % 10
+            variant = ExampleCatalog._normalize_variant(digit, seed * 5 + 1)
+            return {
+                "id": f"single_generated_{seed:04d}",
+                "digit": digit,
+                "variant": variant,
+                "title": f"Generated digit {digit}",
+            }
+        if level == DOUBLE_LEVEL:
+            left = (seed * 3 + 1) % 10
+            right = (seed * 7 + 2) % 10
+            left_variant = ExampleCatalog._normalize_variant(left, seed * 2)
+            right_variant = ExampleCatalog._normalize_variant(right, seed * 2 + 1)
+            return {
+                "id": f"double_generated_{seed:04d}",
+                "left": left,
+                "right": right,
+                "left_variant": left_variant,
+                "right_variant": right_variant,
+                "title": f"Generated {left}{right}",
+            }
+        operator = tuple(OPERATORS)[seed % len(OPERATORS)]
+        left = (seed * 3 + 1) % 10
+        right = (seed * 5 + 2) % 10
+        left_variant = ExampleCatalog._normalize_variant(left, seed * 3)
+        right_variant = ExampleCatalog._normalize_variant(right, seed * 3 + 1)
+        return {
+            "id": f"arithmetic_generated_{seed:04d}",
+            "left": left,
+            "right": right,
+            "operator": operator,
+            "left_variant": left_variant,
+            "right_variant": right_variant,
+            "title": f"Generated {left} {OPERATORS[operator]['symbol']} {right}",
+        }
+
+    @staticmethod
+    def _normalize_variant(digit: int, variant_index: int) -> int:
+        """Normalize a requested variant index into the available range for one digit."""
+
+        bank = load_digit_bank()
+        sample_count = len(bank["by_digit"][int(digit)])
+        return int(variant_index) % sample_count

@@ -1,10 +1,11 @@
-"""Flask application factory for the Double-digits guided lab."""
+"""Flask application factory and shared configuration helpers."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
 from urllib.parse import urljoin
+from typing import Any
 
 from flask import Flask
 
@@ -35,17 +36,23 @@ def _aix_page_url(base_url: str, path: str) -> str:
     return urljoin(base.rstrip("/") + "/", path.lstrip("/"))
 
 
+def default_app_config(root: Path | None = None) -> dict[str, Any]:
+    """Build the default application config from the current environment."""
+
+    project_root = Path(root) if root is not None else Path(__file__).resolve().parents[1]
+    return {
+        "AIX_HUB_URL": os.getenv("AIX_HUB_URL", "/"),
+        "DOUBLEDIGITS_MODELS_DIR": os.getenv("DOUBLEDIGITS_MODELS_DIR", str(project_root / "models")),
+        "DOUBLEDIGITS_DATA_DIR": os.getenv("DOUBLEDIGITS_DATA_DIR", str(project_root / "data")),
+        "DOUBLEDIGITS_ARTIFACT_CACHE": _parse_bool(os.getenv("DOUBLEDIGITS_ARTIFACT_CACHE", "1")),
+    }
+
+
 def create_app(config: dict | None = None) -> Flask:
     """Create the standalone Double-digits Flask application."""
 
-    root = Path(__file__).resolve().parents[1]
     app = Flask(__name__, template_folder="templates", static_folder="static")
-    app.config.from_mapping(
-        AIX_HUB_URL=os.getenv("AIX_HUB_URL", "/"),
-        DOUBLEDIGITS_MODELS_DIR=os.getenv("DOUBLEDIGITS_MODELS_DIR", str(root / "models")),
-        DOUBLEDIGITS_DATA_DIR=os.getenv("DOUBLEDIGITS_DATA_DIR", str(root / "data")),
-        DOUBLEDIGITS_ARTIFACT_CACHE=str(os.getenv("DOUBLEDIGITS_ARTIFACT_CACHE", "1")).strip() not in {"0", "false", "False"},
-    )
+    app.config.from_mapping(default_app_config())
     if config:
         app.config.update(config)
 

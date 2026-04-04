@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import base64
 from io import BytesIO
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -62,13 +63,38 @@ def number_to_image(number: int, *, variants: tuple[int, int] = (0, 1)) -> np.nd
     return compose_pair(digit_variant(digits[0], variants[0]), digit_variant(digits[1], variants[1]))
 
 
-def to_data_uri(image: np.ndarray, *, scale: int = 4) -> str:
-    """Encode one grayscale image array as a PNG data URI."""
+def to_png_bytes(image: np.ndarray, *, scale: int = 4) -> bytes:
+    """Encode one grayscale image array as PNG bytes."""
 
     pil_image = Image.fromarray(np.clip(image, 0, 255).astype(np.uint8), mode="L")
     if scale > 1:
         pil_image = pil_image.resize((pil_image.width * scale, pil_image.height * scale), resample=Image.Resampling.NEAREST)
     buffer = BytesIO()
     pil_image.save(buffer, format="PNG")
-    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return buffer.getvalue()
+
+
+def write_png(image: np.ndarray, path: str | Path, *, scale: int = 1) -> Path:
+    """Write one grayscale image array to disk as a PNG file."""
+
+    output_path = Path(path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_bytes(to_png_bytes(image, scale=scale))
+    return output_path
+
+
+def data_uri_to_png_bytes(data_uri: str) -> bytes:
+    """Decode one PNG data URI into raw PNG bytes."""
+
+    raw = str(data_uri or "")
+    marker = "base64,"
+    if marker not in raw:
+        raise ValueError("Expected a base64 PNG data URI.")
+    return base64.b64decode(raw.split(marker, maxsplit=1)[1].encode("ascii"))
+
+
+def to_data_uri(image: np.ndarray, *, scale: int = 4) -> str:
+    """Encode one grayscale image array as a PNG data URI."""
+
+    encoded = base64.b64encode(to_png_bytes(image, scale=scale)).decode("ascii")
     return f"data:image/png;base64,{encoded}"

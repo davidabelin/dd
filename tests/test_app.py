@@ -42,3 +42,9 @@ def test_visualization_endpoint_returns_payload(client):
     payload = response.get_json()
     assert payload["kind"] == "prototype"
     assert payload["items"]
+
+    comparison_response = client.get("/api/v1/visualizations/comparison?level=arithmetic&example_id=arith_mul_34")
+    assert comparison_response.status_code == 200
+    comparison_payload = comparison_response.get_json()
+    assert comparison_payload["kind"] == "comparison"
+    assert comparison_payload["items"]

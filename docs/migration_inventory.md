@@ -76,17 +76,17 @@ This file is the working migration ledger for notebook-to-`dd` transfer work. It
   - Docstring requirement: document deterministic catalog behavior and level normalization rules
   - Gamma action: add explicit notes about curated versus structured generation and reuse the catalog directly from CLI commands
 
-- [ ] Bulk synthetic dataset generation for future export and parity fixtures
-  - Status: `pending`
+- [x] Bulk synthetic dataset generation for future export and parity fixtures
+  - Status: `done`
   - Source notebook(s): `double_digits_with_MNIST.ipynb`, `digits_classifier.ipynb`, `double_digits_classifier.ipynb`, `arithmetic_double_digits.ipynb`
   - Source lineage: `getDoubleDigits`, `getDDs`, `get_new_data`
-  - Current `dd` state/path: not present as a dedicated export-oriented module
-  - Target destination: add non-web dataset builders under `dd_core` or `scripts/` first, then expose stable fixture/export flows through `dd_cli examples`
+  - Current `dd` state/path: `dd_core/examples.py`, `dd_core/export.py`, `dd_cli/app.py`
+  - Target destination: keep deterministic batch generation in `dd_core.examples` and file export in `dd_core.export`, exposed through `dd_cli examples generate`
   - CLI exposure: `web+cli`
   - Docs/UI destination: `docs/doubledigits_design.md`
-  - Planned tests: add deterministic fixture-generation tests and CLI snapshot/schema tests
-  - Docstring requirement: full module, function, and parameter docstrings once extraction/export helpers exist
-  - Gamma action: decide the smallest useful export surface for Gamma and avoid reintroducing notebook-only batching code
+  - Planned tests: `tests/test_cli.py` batch-export coverage plus row-order alignment checks between `manifest.csv` and `dataset.npz`
+  - Docstring requirement: full module, function, and parameter docstrings on generation/export helpers
+  - Gamma action: keep the generated batch contract stable: `images/`, `manifest.csv`, and `dataset.npz`
 
 - [x] Notebook-lineage compatibility shim for canonical helper names
   - Status: `done`
@@ -212,17 +212,17 @@ This file is the working migration ledger for notebook-to-`dd` transfer work. It
   - Docstring requirement: document operator confidence calculation and result-image behavior
   - Gamma action: expose the same arithmetic path through CLI without adding a second implementation
 
-- [ ] Prediction sampling and answer-reporting helpers
-  - Status: `partial`
+- [x] Prediction sampling and answer-reporting helpers
+  - Status: `done`
   - Source notebook(s): `double_digits_with_MNIST.ipynb`, `minimal_convolution_double_digits.ipynb`, `digits_project.ipynb`, `arithmetic_double_digits.ipynb`
   - Source lineage: `guessing`, notebook-table `get_results`, `getAnswers`, `no_guessing`, `no_get_results`
-  - Current `dd` state/path: partly replaced by `dd_models/baselines.py`, `dd_web/runtime.py`, and API payload fields such as `prediction`, `confidence`, `top_classes`, and `explanation`
+  - Current `dd` state/path: `dd_models/baselines.py`, `dd_web/runtime.py`, `dd_cli/formatting.py`, `dd_cli/app.py`
   - Target destination: normalize human-readable reporting in `dd_cli infer` and shared response-format helpers instead of notebook DataFrames
   - CLI exposure: `web+cli`
   - Docs/UI destination: `README.md`, level result panels
-  - Planned tests: add CLI output-schema tests and API/CLI parity assertions
+  - Planned tests: `tests/test_cli.py` inference output coverage plus shared runtime parity checks
   - Docstring requirement: full docstrings on any shared formatting helper and CLI command entrypoint
-  - Gamma action: finish the reporting layer in terminal form and avoid reviving notebook-style ad hoc tables
+  - Gamma action: keep CLI text output concise and keep `--json` as the stable scripting contract
 
 - [ ] tf.keras training and export utilities for future learned artifacts
   - Status: `deferred`
@@ -274,17 +274,17 @@ This file is the working migration ledger for notebook-to-`dd` transfer work. It
   - Docstring requirement: document exactly what is synthetic/proxy visualization versus true model activation output
   - Gamma action: clarify the current visualization semantics and avoid implying CNN-layer parity that the baseline model does not provide
 
-- [ ] Weight and prototype inspection views
-  - Status: `partial`
+- [x] Weight and prototype inspection views
+  - Status: `done`
   - Source notebook(s): `digits_project.ipynb`, `arithmetic_double_digits.ipynb`, `digits_classifier.ipynb`, `double_digits_classifier.ipynb`
   - Source lineage: `showWeights`, prototype/weight-inspection cells
-  - Current `dd` state/path: `dd_models/baselines.py` (`coefficient_map`), `dd_visuals/explain.py`
+  - Current `dd` state/path: `dd_models/baselines.py`, `dd_visuals/explain.py`, `dd_cli/app.py`
   - Target destination: keep coefficient/prototype inspection in `dd_visuals` backed by model helpers in `dd_models`
   - CLI exposure: `web+cli`
   - Docs/UI destination: visual explanation panels, `docs/artifact_provenance.md`
-  - Planned tests: add explicit coefficient/prototype payload assertions when Gamma expands visualization coverage
+  - Planned tests: `tests/test_core.py`, `tests/test_app.py`, and `tests/test_cli.py` visualization coverage
   - Docstring requirement: full docstrings describing what each map represents and how it differs from notebook CNN weights
-  - Gamma action: finish naming and documentation so the current views are presented honestly and consistently across web and CLI
+  - Gamma action: keep the current prototype/coefficient naming stable across API, CLI, and docs
 
 - [ ] Training-history and learning-curve plots
   - Status: `deferred`
@@ -336,17 +336,17 @@ This file is the working migration ledger for notebook-to-`dd` transfer work. It
   - Docstring requirement: preserve endpoint and service docstrings; add payload contract notes if structured input changes
   - Gamma action: use the runtime contract directly from CLI rather than wrapping the HTTP route
 
-- [ ] Visualization API endpoint breadth and naming
-  - Status: `partial`
+- [x] Visualization API endpoint breadth and naming
+  - Status: `done`
   - Source notebook(s): `minimal_convolution_double_digits.ipynb`, `digits_project.ipynb`, `digits_classifier.ipynb`, `double_digits_classifier.ipynb`
   - Source lineage: notebook layer-output and feature-view helpers
-  - Current `dd` state/path: `dd_web/blueprints/api.py`, `dd_web/runtime.py`, `dd_visuals/explain.py`
+  - Current `dd` state/path: `dd_web/blueprints/api.py`, `dd_web/runtime.py`, `dd_visuals/explain.py`, `dd_cli/app.py`
   - Target destination: keep visual payload delivery under `GET /api/v1/visualizations/<kind>` and align future CLI naming with the same kinds
   - CLI exposure: `web+cli`
   - Docs/UI destination: `README.md`, `docs/doubledigits_design.md`
-  - Planned tests: retain `tests/test_app.py::test_visualization_endpoint_returns_payload`; add coverage for every supported visualization kind if Gamma expands the set
+  - Planned tests: API, core, and CLI coverage for `feature_maps`, `prototype`, and `comparison`
   - Docstring requirement: document the supported `kind` values and payload semantics
-  - Gamma action: finalize the supported visualization names and keep them identical between API and CLI
+  - Gamma action: keep `feature_maps`, `prototype`, and `comparison` as the stable Gamma visualization set
 
 - [x] Standalone runtime and AIX-friendly app wiring
   - Status: `done`
@@ -362,77 +362,77 @@ This file is the working migration ledger for notebook-to-`dd` transfer work. It
 
 ### CLI mapping
 
-- [ ] Canonical `dd_cli` package and `python -m dd_cli` entrypoint
-  - Status: `pending`
+- [x] Canonical `dd_cli` package and `python -m dd_cli` entrypoint
+  - Status: `done`
   - Source notebook(s): none directly; required terminal access layer for migrated features
   - Source lineage: Beta CLI contract
-  - Current `dd` state/path: not present
+  - Current `dd` state/path: `dd_cli/__main__.py`, `dd_cli/app.py`, `dd_cli/formatting.py`
   - Target destination: add a top-level `dd_cli` package with a `__main__.py` entrypoint
   - CLI exposure: `cli-only`
   - Docs/UI destination: `README.md`, command help text
-  - Planned tests: add `tests/test_cli.py` for invocation, help output, and failure modes
+  - Planned tests: `tests/test_cli.py` help output, invalid-input, and command execution coverage
   - Docstring requirement: full module, command, and argument docstrings
-  - Gamma action: implement the package first so the rest of the terminal surface has one stable home
+  - Gamma action: keep `python -m dd_cli` as the stable shell-neutral entrypoint
 
-- [ ] `python -m dd_cli examples`
-  - Status: `pending`
+- [x] `python -m dd_cli examples`
+  - Status: `done`
   - Source notebook(s): `double_digits_with_MNIST.ipynb`, `digits_project.ipynb`, `arithmetic_double_digits.ipynb`
   - Source lineage: `getDoubleDigits`, `getDDs`, curated example selection
-  - Current `dd` state/path: behavior exists only through `ExampleCatalog` and `GET /api/v1/examples`
+  - Current `dd` state/path: `dd_cli/app.py`, `dd_core/examples.py`, `dd_core/export.py`
   - Target destination: expose catalog listing and optional structured generation through `dd_cli`
   - CLI exposure: `cli-only`
   - Docs/UI destination: `README.md`
-  - Planned tests: CLI output-schema and level-filter tests
+  - Planned tests: `tests/test_cli.py` for `list`, `show`, and `generate`
   - Docstring requirement: full command docstring plus argument semantics
-  - Gamma action: build directly on `ExampleCatalog` or `DoubleDigitsService`, not on shelling out to HTTP
+  - Gamma action: keep the `list`, `show`, and `generate` subcommands on shared runtime/core helpers, not HTTP wrappers
 
-- [ ] `python -m dd_cli infer`
-  - Status: `pending`
+- [x] `python -m dd_cli infer`
+  - Status: `done`
   - Source notebook(s): `double_digits_with_MNIST.ipynb`, `minimal_convolution_double_digits.ipynb`, `digits_project.ipynb`, `arithmetic_double_digits.ipynb`
   - Source lineage: `guessing`, notebook prediction tables, result inspection
-  - Current `dd` state/path: behavior exists through `BaselineRuntime` and `POST /api/v1/infer`
+  - Current `dd` state/path: `dd_cli/app.py`, `dd_cli/formatting.py`, `dd_web/runtime.py`
   - Target destination: expose structured inference and example-id inference through `dd_cli`
   - CLI exposure: `cli-only`
   - Docs/UI destination: `README.md`
-  - Planned tests: CLI inference schema tests plus parity checks against runtime outputs
+  - Planned tests: `tests/test_cli.py` inference coverage plus shared runtime parity checks
   - Docstring requirement: full command docstring and shared result-format helper docstrings
-  - Gamma action: implement terminal inference with stable machine-readable output and concise human-readable defaults
+  - Gamma action: keep text output concise and `--json` stable for scripting
 
-- [ ] `python -m dd_cli visualize`
-  - Status: `pending`
+- [x] `python -m dd_cli visualize`
+  - Status: `done`
   - Source notebook(s): `minimal_convolution_double_digits.ipynb`, `digits_project.ipynb`, `digits_classifier.ipynb`, `double_digits_classifier.ipynb`
   - Source lineage: `showOutput`, `show_layer_output`, `show_layers`, prototype/weight views
-  - Current `dd` state/path: behavior exists only through `dd_visuals` and `GET /api/v1/visualizations/<kind>`
+  - Current `dd` state/path: `dd_cli/app.py`, `dd_core/export.py`, `dd_visuals/explain.py`
   - Target destination: expose visualization payloads through `dd_cli`
   - CLI exposure: `cli-only`
   - Docs/UI destination: `README.md`, `docs/doubledigits_design.md`
-  - Planned tests: CLI visualization-kind tests and output-format tests
+  - Planned tests: `tests/test_cli.py` visualization JSON/export coverage plus API/core parity checks
   - Docstring requirement: full command and payload docstrings
-  - Gamma action: mirror API visualization names exactly to avoid split terminology
+  - Gamma action: keep visualization names and payload semantics identical between API and CLI
 
-- [ ] `python -m dd_cli serve`
-  - Status: `partial`
+- [x] `python -m dd_cli serve`
+  - Status: `done`
   - Source notebook(s): none directly; terminalization of the current standalone app entrypoint
   - Source lineage: Beta CLI contract plus current local serve behavior
-  - Current `dd` state/path: `run.py` already launches the Flask app, but not through `dd_cli`
+  - Current `dd` state/path: `dd_web/serve.py`, `dd_cli/app.py`, `run.py`
   - Target destination: move or wrap local serve behavior under `dd_cli serve` while keeping `run.py` backward-compatible if practical
   - CLI exposure: `cli-only`
   - Docs/UI destination: `README.md`
-  - Planned tests: CLI serve smoke test and config/env passthrough checks
+  - Planned tests: `tests/test_cli.py` serve runner invocation checks
   - Docstring requirement: full command docstring plus environment/config notes
-  - Gamma action: give terminal users one stable entrypoint without removing the current local dev flow abruptly
+  - Gamma action: keep `run.py` as a backward-compatible wrapper around the shared serve helpers
 
-- [ ] Scripts policy for public versus one-off command surfaces
-  - Status: `pending`
+- [x] Scripts policy for public versus one-off command surfaces
+  - Status: `done`
   - Source notebook(s): none directly; migration governance item
   - Source lineage: Beta CLI contract
-  - Current `dd` state/path: `scripts/` exists but has no written policy
+  - Current `dd` state/path: `README.md`, `docs/doubledigits_design.md`
   - Target destination: document that stable user-facing commands live in `dd_cli`, while `scripts/` stays reserved for internal utilities
   - CLI exposure: `docs-only`
   - Docs/UI destination: `README.md`, `docs/DOUBLEDIGITS_PLAN_beta.md`
   - Planned tests: documentation review only
   - Docstring requirement: N/A until utility scripts are added; any new scripts should still carry module docstrings
-  - Gamma action: codify the rule when the first CLI package lands
+  - Gamma action: keep the policy explicit in docs so future utilities do not bypass the stable CLI surface
 
 ### Narrative, exercises, and provenance
 

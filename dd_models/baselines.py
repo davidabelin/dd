@@ -18,6 +18,8 @@ from dd_core.render import operator_canvas, to_data_uri
 
 @dataclass(slots=True)
 class InferenceResult:
+    """Normalized inference payload shared by the web app and CLI."""
+
     level: str
     prediction: dict[str, Any]
     confidence: float
@@ -28,6 +30,8 @@ class InferenceResult:
 
 
 class OperatorTemplateModel:
+    """Recognize arithmetic operators by comparing them to fixed templates."""
+
     def __init__(self) -> None:
         self._templates = {
             operator: operator_canvas(operator).astype(np.float32)
@@ -35,6 +39,8 @@ class OperatorTemplateModel:
         }
 
     def predict(self, image_28x28: np.ndarray) -> tuple[str, dict[str, float]]:
+        """Predict the operator label and normalized template-match scores."""
+
         image = image_28x28.astype(np.float32)
         scores = {}
         for operator, template in self._templates.items():
@@ -46,10 +52,14 @@ class OperatorTemplateModel:
         return best, probabilities
 
     def template(self, operator: str) -> np.ndarray:
+        """Return a copy of one operator template image."""
+
         return np.array(self._templates[operator], copy=True)
 
 
 class SingleDigitLogRegModel:
+    """Recognize one digit tile with a cached multinomial logistic-regression model."""
+
     def __init__(self, *, models_dir: str, cache_artifact: bool = True) -> None:
         self.models_dir = Path(models_dir)
         self.models_dir.mkdir(parents=True, exist_ok=True)
@@ -61,6 +71,8 @@ class SingleDigitLogRegModel:
 
     @property
     def model(self) -> LogisticRegression:
+        """Load or train the cached scikit-learn digit classifier."""
+
         if self._model is not None:
             return self._model
         if self.cache_artifact and self.artifact_path.exists():
@@ -70,7 +82,6 @@ class SingleDigitLogRegModel:
         labels = self._bank["labels"]
         model = LogisticRegression(
             max_iter=2000,
-            multi_class="multinomial",
             solver="lbfgs",
             random_state=7,
         )
@@ -81,6 +92,8 @@ class SingleDigitLogRegModel:
         return model
 
     def predict(self, image_28x28: np.ndarray) -> tuple[int, float, list[dict[str, Any]]]:
+        """Predict one digit tile and return the top classes with confidences."""
+
         features = downscale_digit(image_28x28).reshape(1, -1)
         probabilities = self.model.predict_proba(features)[0]
         order = np.argsort(probabilities)[::-1]
@@ -93,9 +106,13 @@ class SingleDigitLogRegModel:
         return prediction, confidence, top_classes
 
     def class_mean(self, digit: int) -> np.ndarray:
+        """Return the mean training prototype image for one digit class."""
+
         return np.array(self._class_means[int(digit)], copy=True)
 
     def coefficient_map(self, digit: int) -> np.ndarray:
+        """Return one resized coefficient heatmap for the requested digit class."""
+
         coef = self.model.coef_[int(digit)].reshape(8, 8)
         normalized = coef - coef.min()
         max_value = float(normalized.max() or 1.0)
@@ -114,6 +131,8 @@ class BaselineRuntime:
         self.operator_model = OperatorTemplateModel()
 
     def infer_from_example(self, example: Example) -> InferenceResult:
+        """Run level-appropriate inference for one prepared example."""
+
         if example.level == SINGLE_LEVEL:
             prediction, confidence, top_classes = self.single_model.predict(example.image)
             return InferenceResult(

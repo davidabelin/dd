@@ -1,20 +1,30 @@
 # Double-digits Model and Artifact Provenance
 
-## V1 baseline artifacts
+## Current baseline inputs
+- `sklearn.datasets.load_digits()` provides the handwritten source samples.
+- Source samples are resized into `28x28` grayscale digit canvases for the current lab and CLI flows.
+- Two-digit scenes and arithmetic scenes are composed programmatically from those digit tiles.
 
-The first app release uses lightweight baseline classifiers and deterministic generators so the lab is interactive immediately and does not depend on heavyweight notebook-era training infrastructure.
+## Current runtime artifacts
+- Single-digit recognition uses a cached scikit-learn logistic-regression model.
+- Double-digit recognition composes two single-digit predictions rather than using a separate monolithic classifier.
+- Arithmetic recognition composes two digit predictions with operator-template matching and then evaluates the controlled result.
 
-### Inputs
-- `sklearn.datasets.load_digits()` provides the base handwritten digit samples
-- digit samples are resized into `28x28` grayscale canvases for guided visualization
-- double-digit and arithmetic scenes are composed programmatically from those base digits
+## Gamma export artifacts
+- `python -m dd_cli examples generate` writes:
+  - `images/` for direct image inspection
+  - `manifest.csv` as the authoritative metadata table
+  - `dataset.npz` for aligned numeric workflows
+- `manifest.csv` is intentionally pandas-readable without requiring notebook code or custom parsers.
+- `dataset.npz` stores the aligned `images`, `targets`, `ids`, and `metadata_json` arrays for the same row order.
 
-### Baseline inference
-- single-digit recognition uses a cached scikit-learn logistic regression model
-- double-digit recognition composes two single-digit predictions
-- arithmetic recognition composes two digit predictions plus operator template matching, then computes the controlled result
+## Visualization provenance
+- `feature_maps` are fixed-filter explanatory views, not learned CNN activations.
+- `prototype` views combine logistic-regression class means and coefficient maps plus operator templates where relevant.
+- `comparison` views expose the current input segments and the rendered arithmetic result image when one exists.
 
-### Why this differs from the notebook era
-- notebook-era TensorFlow experiments mixed tutorial code, exploratory code, and product ideas
-- v1 standardizes on one clean inference contract first
-- future phases may replace or augment the baselines with exported `tf.keras` artifacts once the interactive lab flow is stable
+## Why this differs from the notebook era
+- The notebooks mixed tutorial narrative, exploratory model work, Colab execution scaffolding, and product ideas in the same files.
+- The migrated app and CLI standardize on one clean inference contract first.
+- Estimator-era flows, retraining workflows, stacking experiments, and broader CNN research remain outside the active runtime path.
+- Future phases may replace or augment the current baselines with exported learned artifacts once those models are stable enough to justify a richer inspection surface.

@@ -11,6 +11,9 @@ from dd_core.render import to_data_uri
 from dd_models.baselines import BaselineRuntime, InferenceResult
 
 
+VISUALIZATION_KINDS = ("feature_maps", "prototype", "comparison")
+
+
 FILTERS = {
     "vertical": np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32),
     "horizontal": np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32),
@@ -20,6 +23,8 @@ FILTERS = {
 
 
 def _convolve(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
+    """Apply one simple normalized 3x3 filter to a grayscale image."""
+
     padded = np.pad(image.astype(np.float32), 1, mode="edge")
     output = np.zeros_like(image, dtype=np.float32)
     for row in range(image.shape[0]):
@@ -33,6 +38,8 @@ def _convolve(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
 
 
 def feature_maps(image: np.ndarray) -> list[dict[str, Any]]:
+    """Build lightweight filtered feature maps for one image segment."""
+
     return [
         {
             "name": name,
@@ -43,6 +50,8 @@ def feature_maps(image: np.ndarray) -> list[dict[str, Any]]:
 
 
 def build_visualization(kind: str, *, runtime: BaselineRuntime, inference: InferenceResult) -> dict[str, Any]:
+    """Build one supported visualization payload for an inference result."""
+
     normalized = str(kind or "feature_maps").strip().lower()
     if normalized == "feature_maps":
         return {

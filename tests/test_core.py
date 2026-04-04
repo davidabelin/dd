@@ -44,7 +44,10 @@ def test_visualization_payloads_have_expected_sections(tmp_path):
     inference = runtime.infer_from_example(example)
     feature_maps = build_visualization("feature_maps", runtime=runtime, inference=inference)
     prototype = build_visualization("prototype", runtime=runtime, inference=inference)
+    comparison = build_visualization("comparison", runtime=runtime, inference=inference)
     assert feature_maps["kind"] == "feature_maps"
     assert feature_maps["items"]
     assert prototype["kind"] == "prototype"
     assert prototype["items"]
+    assert comparison["kind"] == "comparison"
+    assert comparison["items"]
