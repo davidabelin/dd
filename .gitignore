@@ -1,4 +1,6 @@
 __pycache__/
 .pytest_cache/
 models/*.joblib
+models/*.keras
+models/*.json
 data/generated/

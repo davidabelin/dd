@@ -53,7 +53,7 @@ def export_example_batch(examples: Sequence[Example], out_dir: str | Path) -> di
 
     for index, example in enumerate(examples):
         filename = f"{index:04d}_{slugify(example.id)}.png"
-        image_path = write_png(example.image, images_dir / filename, scale=1)
+        image_path = write_png(example.image, images_dir / filename, scale=1, cmap=example.display_cmap)
         target = target_value_for_example(example)
         metadata_text = json.dumps(example.metadata, sort_keys=True)
 

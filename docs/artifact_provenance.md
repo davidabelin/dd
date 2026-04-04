@@ -1,30 +1,40 @@
 # Double-digits Model and Artifact Provenance
 
-## Current baseline inputs
-- `sklearn.datasets.load_digits()` provides the handwritten source samples.
-- Source samples are resized into `28x28` grayscale digit canvases for the current lab and CLI flows.
-- Two-digit scenes and arithmetic scenes are composed programmatically from those digit tiles.
+## Current data source
+- The live runtime is now MNIST-only.
+- `dd_core.dataset` loads the raw `train` and `test` MNIST splits through standalone Keras.
+- Single-digit examples are raw `28x28` MNIST samples.
+- Two-digit scenes are notebook-style `28x56` composites made by concatenating two MNIST digits.
+- Arithmetic scenes are also `28x56`; the operator is drawn directly into the center of the composed scene, matching `arithmetic_double_digits.ipynb`.
 
 ## Current runtime artifacts
-- Single-digit recognition uses a cached scikit-learn logistic-regression model.
-- Double-digit recognition composes two single-digit predictions rather than using a separate monolithic classifier.
-- Arithmetic recognition composes two digit predictions with operator-template matching and then evaluates the controlled result.
+- The sklearn logistic-regression path is gone.
+- The active runtime uses notebook-derived Keras presets cached as `.keras` artifacts in `models/`.
+- Default presets are:
+  - `single_mnist_dense`
+  - `double_project_modelx`
+  - `arithmetic_modelx`
+- Additional notebook presets are exposed through `python -m dd_cli train`.
 
-## Gamma export artifacts
+## Why the runtime uses Keras on torch
+- The legacy notebooks were written for TensorFlow/Keras in Colab.
+- The current local Python 3.14 environment does not provide a practical TensorFlow install path.
+- The migrated runtime therefore keeps the notebook-style Keras layer/model definitions but executes them through standalone Keras with the torch backend.
+
+## Export artifacts
 - `python -m dd_cli examples generate` writes:
-  - `images/` for direct image inspection
-  - `manifest.csv` as the authoritative metadata table
-  - `dataset.npz` for aligned numeric workflows
-- `manifest.csv` is intentionally pandas-readable without requiring notebook code or custom parsers.
-- `dataset.npz` stores the aligned `images`, `targets`, `ids`, and `metadata_json` arrays for the same row order.
+  - `images/`
+  - `manifest.csv`
+  - `dataset.npz`
+- `manifest.csv` is the authoritative metadata table.
+- `dataset.npz` stores aligned `images`, `targets`, `ids`, and `metadata_json`.
 
 ## Visualization provenance
-- `feature_maps` are fixed-filter explanatory views, not learned CNN activations.
-- `prototype` views combine logistic-regression class means and coefficient maps plus operator templates where relevant.
-- `comparison` views expose the current input segments and the rendered arithmetic result image when one exists.
+- `feature_maps` now come from real model activations rather than fixed image filters.
+- `prototype` views combine MNIST class means with notebook-style first-layer weight maps.
+- `comparison` views show the generated scene against the underlying MNIST ground-truth source digits and, for arithmetic, the notebook operator/result context.
 
-## Why this differs from the notebook era
-- The notebooks mixed tutorial narrative, exploratory model work, Colab execution scaffolding, and product ideas in the same files.
-- The migrated app and CLI standardize on one clean inference contract first.
-- Estimator-era flows, retraining workflows, stacking experiments, and broader CNN research remain outside the active runtime path.
-- Future phases may replace or augment the current baselines with exported learned artifacts once those models are stable enough to justify a richer inspection surface.
+## Notebook color conventions
+- Raw MNIST-style scenes use `binary_r`.
+- Activation maps use `viridis`.
+- First-layer notebook weight views use `bone`.

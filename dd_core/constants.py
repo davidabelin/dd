@@ -10,7 +10,7 @@ LEVELS = (SINGLE_LEVEL, DOUBLE_LEVEL, ARITHMETIC_LEVEL)
 
 DIGIT_SIZE = (28, 28)
 DOUBLE_SCENE_SIZE = (28, 56)
-ARITHMETIC_SCENE_SIZE = (28, 84)
+ARITHMETIC_SCENE_SIZE = DOUBLE_SCENE_SIZE
 
 OPERATORS = {
     "add": {
@@ -27,6 +27,11 @@ OPERATORS = {
         "symbol": "×",
         "label": "Multiplication",
         "description": "Multiply the two recognized digits.",
+    },
+    "divide": {
+        "symbol": "÷",
+        "label": "Division",
+        "description": "Divide the larger digit by the smaller one and round to the nearest integer, using 99 for division by zero as in the notebook.",
     },
 }
 
@@ -51,8 +56,10 @@ CURATED_EXAMPLES = {
         {"id": "arith_add_37", "left": 3, "right": 7, "operator": "add", "left_variant": 8, "right_variant": 3, "title": "3 + 7"},
         {"id": "arith_sub_82", "left": 8, "right": 2, "operator": "subtract", "left_variant": 4, "right_variant": 6, "title": "8 - 2"},
         {"id": "arith_mul_34", "left": 3, "right": 4, "operator": "multiply", "left_variant": 2, "right_variant": 7, "title": "3 × 4"},
+        {"id": "arith_div_84", "left": 8, "right": 4, "operator": "divide", "left_variant": 6, "right_variant": 2, "title": "8 ÷ 4"},
         {"id": "arith_add_58", "left": 5, "right": 8, "operator": "add", "left_variant": 10, "right_variant": 5, "title": "5 + 8"},
         {"id": "arith_sub_91", "left": 9, "right": 1, "operator": "subtract", "left_variant": 1, "right_variant": 11, "title": "9 - 1"},
         {"id": "arith_mul_67", "left": 6, "right": 7, "operator": "multiply", "left_variant": 9, "right_variant": 8, "title": "6 × 7"},
+        {"id": "arith_div_90", "left": 9, "right": 0, "operator": "divide", "left_variant": 3, "right_variant": 1, "title": "9 ÷ 0"},
     ],
 }

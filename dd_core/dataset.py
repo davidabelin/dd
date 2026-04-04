@@ -1,58 +1,120 @@
-"""Digit sample loading and rendering helpers."""
+"""MNIST loading and sample-selection helpers for Double-digits."""
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from functools import lru_cache
 from typing import Any
 
 import numpy as np
-from PIL import Image
-from sklearn.datasets import load_digits
 
-from dd_core.constants import DIGIT_SIZE
+from dd_models.keras_backend import keras
 
 
-def _resize_to_28(image_8x8: np.ndarray) -> np.ndarray:
-    scaled = np.clip((image_8x8 / 16.0) * 255.0, 0, 255).astype(np.uint8)
-    pil_image = Image.fromarray(scaled, mode="L")
-    resized = pil_image.resize((DIGIT_SIZE[1], DIGIT_SIZE[0]), resample=Image.Resampling.BICUBIC)
-    return np.array(resized, dtype=np.uint8)
+@dataclass(frozen=True, slots=True)
+class MnistRecord:
+    """One resolved MNIST sample with split, index, label, and image data."""
+
+    split: str
+    index: int
+    digit: int
+    image: np.ndarray
+
+
+def _group_indices(labels: np.ndarray) -> dict[int, np.ndarray]:
+    """Group image indices by digit label for fast deterministic lookup."""
+
+    return {
+        digit: np.flatnonzero(labels == digit).astype(np.int32)
+        for digit in range(10)
+    }
 
 
 @lru_cache(maxsize=1)
 def load_digit_bank() -> dict[str, Any]:
-    dataset = load_digits()
-    images_8x8 = dataset.images.astype(np.float32)
-    labels = dataset.target.astype(int)
-    images_28 = np.stack([_resize_to_28(image) for image in images_8x8], axis=0)
-    by_digit: dict[int, list[np.ndarray]] = {digit: [] for digit in range(10)}
-    by_digit_8: dict[int, list[np.ndarray]] = {digit: [] for digit in range(10)}
-    for image_8x8, image_28, label in zip(images_8x8, images_28, labels, strict=False):
-        by_digit[int(label)].append(image_28)
-        by_digit_8[int(label)].append(image_8x8.astype(np.float32))
-    class_means = {
-        digit: np.mean(np.stack(samples, axis=0), axis=0).astype(np.float32)
-        for digit, samples in by_digit.items()
-    }
+    """Load the raw MNIST train/test splits and digit-wise lookup tables."""
+
+    (train_images, train_labels), (test_images, test_labels) = keras.datasets.mnist.load_data()
+    train_images = train_images.astype(np.uint8)
+    test_images = test_images.astype(np.uint8)
+    train_labels = train_labels.astype(np.int64)
+    test_labels = test_labels.astype(np.int64)
+    combined_images = np.concatenate([train_images, test_images], axis=0)
+    combined_labels = np.concatenate([train_labels, test_labels], axis=0)
+
     return {
-        "images_8x8": images_8x8,
-        "images_28": images_28,
-        "labels": labels,
-        "by_digit": by_digit,
-        "by_digit_8": by_digit_8,
-        "class_means": class_means,
+        "train_images": train_images,
+        "train_labels": train_labels,
+        "test_images": test_images,
+        "test_labels": test_labels,
+        "train_by_digit": _group_indices(train_labels),
+        "test_by_digit": _group_indices(test_labels),
+        "class_means": {
+            digit: combined_images[combined_labels == digit].mean(axis=0).astype(np.float32)
+            for digit in range(10)
+        },
     }
 
 
-def digit_variant(digit: int, variant_index: int = 0, *, size: str = "28") -> np.ndarray:
+def normalize_images(images: np.ndarray) -> np.ndarray:
+    """Scale one image array or image batch into the notebook 0..1 range."""
+
+    return np.asarray(images, dtype=np.float32) / 255.0
+
+
+def mnist_split(split: str = "test") -> tuple[np.ndarray, np.ndarray]:
+    """Return one named MNIST split as ``(images, labels)`` arrays."""
+
+    normalized = str(split or "test").strip().lower()
     bank = load_digit_bank()
-    source = bank["by_digit"] if size == "28" else bank["by_digit_8"]
-    samples = source[int(digit)]
-    index = int(variant_index) % len(samples)
-    return np.array(samples[index], copy=True)
+    if normalized == "train":
+        return bank["train_images"], bank["train_labels"]
+    if normalized == "test":
+        return bank["test_images"], bank["test_labels"]
+    raise ValueError(f"Unsupported MNIST split: {split}")
 
 
-def downscale_digit(image_28x28: np.ndarray) -> np.ndarray:
-    image = Image.fromarray(np.clip(image_28x28, 0, 255).astype(np.uint8), mode="L")
-    downsized = image.resize((8, 8), resample=Image.Resampling.BICUBIC)
-    return (np.array(downsized, dtype=np.float32) / 255.0) * 16.0
+def mnist_sample(index: int, *, split: str = "test") -> MnistRecord:
+    """Return one MNIST sample resolved by absolute index within a split."""
+
+    images, labels = mnist_split(split)
+    actual_index = int(index) % len(images)
+    return MnistRecord(
+        split=str(split).strip().lower(),
+        index=actual_index,
+        digit=int(labels[actual_index]),
+        image=np.array(images[actual_index], copy=True),
+    )
+
+
+def digit_variant_record(digit: int, variant_index: int = 0, *, split: str = "test") -> MnistRecord:
+    """Return one deterministic digit sample chosen from a digit-specific bank."""
+
+    target_digit = int(digit)
+    normalized = str(split or "test").strip().lower()
+    bank = load_digit_bank()
+    if normalized == "train":
+        images = bank["train_images"]
+        labels = bank["train_labels"]
+        by_digit = bank["train_by_digit"]
+    elif normalized == "test":
+        images = bank["test_images"]
+        labels = bank["test_labels"]
+        by_digit = bank["test_by_digit"]
+    else:
+        raise ValueError(f"Unsupported MNIST split: {split}")
+
+    candidates = by_digit[target_digit]
+    actual_index = int(candidates[int(variant_index) % len(candidates)])
+    return MnistRecord(
+        split=normalized,
+        index=actual_index,
+        digit=int(labels[actual_index]),
+        image=np.array(images[actual_index], copy=True),
+    )
+
+
+def digit_variant(digit: int, variant_index: int = 0, *, split: str = "test") -> np.ndarray:
+    """Return one digit image chosen deterministically by label and variant."""
+
+    return digit_variant_record(digit, variant_index, split=split).image

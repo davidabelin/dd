@@ -5,21 +5,27 @@ from __future__ import annotations
 import argparse
 from typing import Any
 
+from dd_core.dataset import mnist_sample
 from dd_core.constants import LEVELS, OPERATORS, SINGLE_LEVEL
 from dd_core.export import export_example_batch, export_visualization_payload, summarize_examples
+from dd_core.render import to_data_uri, write_png
 from dd_visuals.explain import VISUALIZATION_KINDS
 from dd_web import default_app_config
 from dd_web.runtime import DoubleDigitsService
 from dd_web.serve import DEFAULT_DEBUG, DEFAULT_HOST, DEFAULT_PORT, run_local_server
 
 from dd_cli.formatting import (
+    format_dataset_detail,
     dump_json,
     format_example_detail,
     format_example_list,
     format_generation,
     format_inference,
+    format_training_list,
+    format_training_run,
     format_visualization,
 )
+from dd_models.baselines import NotebookClassifier, PRESETS, list_training_presets
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -31,6 +37,8 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if args.command == "examples":
             return _handle_examples(args)
+        if args.command == "dataset":
+            return _handle_dataset(args)
         if args.command == "infer":
             payload = _build_service().infer(_payload_from_args(args))
             _emit(payload, as_json=args.as_json, formatter=format_inference)
@@ -53,6 +61,8 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "serve":
             run_local_server(host=args.host, port=args.port, debug=args.debug)
             return 0
+        if args.command == "train":
+            return _handle_train(args)
     except (KeyError, ValueError) as exc:
         parser.exit(status=1, message=f"{exc}\n")
     return 0
@@ -69,6 +79,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     examples_parser = subparsers.add_parser("examples", help="List, inspect, or generate level examples.")
     examples_subparsers = examples_parser.add_subparsers(dest="examples_command", required=True)
+
+    dataset_parser = subparsers.add_parser("dataset", help="Inspect raw MNIST samples.")
+    dataset_subparsers = dataset_parser.add_subparsers(dest="dataset_command", required=True)
+
+    dataset_show_parser = dataset_subparsers.add_parser("show", help="Show one raw MNIST sample by split and index.")
+    dataset_show_parser.add_argument("--split", choices=("train", "test"), default="test", help="MNIST split to query.")
+    dataset_show_parser.add_argument("--index", type=int, required=True, help="Absolute sample index within the split.")
+    dataset_show_parser.add_argument("--out", help="Optional PNG path for the rendered sample.")
+    dataset_show_parser.add_argument("--json", dest="as_json", action="store_true", help="Emit JSON instead of text.")
 
     list_parser = examples_subparsers.add_parser("list", help="List curated examples for one level.")
     _add_level_argument(list_parser)
@@ -100,6 +119,22 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="Bind port for the local server.")
     serve_parser.add_argument("--debug", dest="debug", action="store_true", default=DEFAULT_DEBUG, help="Run Flask in debug mode.")
     serve_parser.add_argument("--no-debug", dest="debug", action="store_false", help="Disable Flask debug mode.")
+
+    train_parser = subparsers.add_parser("train", help="Train notebook-derived MNIST model presets.")
+    train_subparsers = train_parser.add_subparsers(dest="train_command", required=True)
+
+    train_list_parser = train_subparsers.add_parser("list", help="List the available notebook-derived presets.")
+    train_list_parser.add_argument("--level", choices=LEVELS, help="Optional level filter for the preset list.")
+    train_list_parser.add_argument("--json", dest="as_json", action="store_true", help="Emit JSON instead of text.")
+
+    train_run_parser = train_subparsers.add_parser("run", help="Train one named notebook-derived preset.")
+    train_run_parser.add_argument("--preset", required=True, choices=tuple(sorted(PRESETS)), help="Model preset to train.")
+    train_run_parser.add_argument("--train-size", type=_positive_int, help="Optional training-set size override.")
+    train_run_parser.add_argument("--test-size", type=_positive_int, help="Optional test-set size override.")
+    train_run_parser.add_argument("--epochs", type=_positive_int, help="Optional epoch override.")
+    train_run_parser.add_argument("--batch-size", type=_positive_int, help="Optional batch-size override.")
+    train_run_parser.add_argument("--force", action="store_true", help="Retrain even if a cached artifact already exists.")
+    train_run_parser.add_argument("--json", dest="as_json", action="store_true", help="Emit JSON instead of text.")
 
     return parser
 
@@ -139,6 +174,61 @@ def _handle_examples(args: argparse.Namespace) -> int:
     raise ValueError(f"Unsupported examples command: {args.examples_command}")
 
 
+def _handle_dataset(args: argparse.Namespace) -> int:
+    """Dispatch the raw-MNIST dataset command family."""
+
+    if args.dataset_command != "show":
+        raise ValueError(f"Unsupported dataset command: {args.dataset_command}")
+    record = mnist_sample(args.index, split=args.split)
+    output_path = None
+    if args.out:
+        output_path = str(write_png(record.image, args.out, cmap="binary_r"))
+    payload = {
+        "split": record.split,
+        "index": record.index,
+        "digit": record.digit,
+        "image_shape": list(record.image.shape),
+        "output_path": output_path,
+        "image_uri": to_data_uri(record.image, cmap="binary_r"),
+    }
+    _emit(payload, as_json=args.as_json, formatter=format_dataset_detail)
+    return 0
+
+
+def _handle_train(args: argparse.Namespace) -> int:
+    """Dispatch the notebook-derived training command family."""
+
+    if args.train_command == "list":
+        payload = {"presets": list_training_presets(level=args.level)}
+        _emit(payload, as_json=args.as_json, formatter=format_training_list)
+        return 0
+
+    if args.train_command == "run":
+        config = default_app_config()
+        classifier = NotebookClassifier(
+            models_dir=str(config["DOUBLEDIGITS_MODELS_DIR"]),
+            preset_name=args.preset,
+            cache_artifact=True,
+        )
+        metadata = classifier.train(
+            train_size=args.train_size,
+            test_size=args.test_size,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            force=args.force,
+        )
+        payload = {
+            "preset": args.preset,
+            "level": classifier.spec.level,
+            "artifact_path": str(classifier.model_path),
+            "evaluation": metadata.get("evaluation", {}),
+        }
+        _emit(payload, as_json=args.as_json, formatter=format_training_run)
+        return 0
+
+    raise ValueError(f"Unsupported train command: {args.train_command}")
+
+
 def _build_service() -> DoubleDigitsService:
     """Create the shared runtime service using the same config defaults as the Flask app."""
 
@@ -167,6 +257,8 @@ def _add_example_selector_arguments(parser: argparse.ArgumentParser) -> None:
 
     _add_level_argument(parser)
     parser.add_argument("--example-id", help="Curated example id to load instead of structured arguments.")
+    parser.add_argument("--split", choices=("train", "test"), default="test", help="MNIST split for structured examples.")
+    parser.add_argument("--mnist-index", type=int, help="Raw MNIST sample index for single-level commands.")
     parser.add_argument("--digit", type=int, help="Single-digit value for structured single-level input.")
     parser.add_argument("--variant", type=int, default=0, help="Single-digit variant index for structured single-level input.")
     parser.add_argument("--left", type=int, help="Left digit for structured double or arithmetic input.")
@@ -179,14 +271,17 @@ def _add_example_selector_arguments(parser: argparse.ArgumentParser) -> None:
 def _payload_from_args(args: argparse.Namespace) -> dict[str, Any]:
     """Build one inference/visualization payload from parsed CLI arguments."""
 
-    payload: dict[str, Any] = {"level": args.level}
+    payload: dict[str, Any] = {"level": args.level, "split": args.split}
     if args.example_id:
         payload["example_id"] = args.example_id
         return payload
 
     if args.level == SINGLE_LEVEL:
+        if args.mnist_index is not None:
+            payload["mnist_index"] = args.mnist_index
+            return payload
         if args.digit is None:
-            raise ValueError("Provide --example-id or --digit for single-level commands.")
+            raise ValueError("Provide --example-id, --mnist-index, or --digit for single-level commands.")
         payload["digit"] = args.digit
         payload["variant"] = args.variant
         return payload

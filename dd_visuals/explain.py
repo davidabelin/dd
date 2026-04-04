@@ -1,12 +1,9 @@
-"""Visualization payload builders for Double-digits inference scenes."""
+"""Visualization payload builders for notebook-derived Double-digits scenes."""
 
 from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
-
-from dd_core.constants import DIGIT_SIZE, OPERATORS
 from dd_core.render import to_data_uri
 from dd_models.baselines import BaselineRuntime, InferenceResult
 
@@ -14,99 +11,77 @@ from dd_models.baselines import BaselineRuntime, InferenceResult
 VISUALIZATION_KINDS = ("feature_maps", "prototype", "comparison")
 
 
-FILTERS = {
-    "vertical": np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]], dtype=np.float32),
-    "horizontal": np.array([[-1, -2, -1], [0, 0, 0], [1, 2, 1]], dtype=np.float32),
-    "diagonal": np.array([[2, 1, 0], [1, 0, -1], [0, -1, -2]], dtype=np.float32),
-    "center": np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]], dtype=np.float32),
-}
-
-
-def _convolve(image: np.ndarray, kernel: np.ndarray) -> np.ndarray:
-    """Apply one simple normalized 3x3 filter to a grayscale image."""
-
-    padded = np.pad(image.astype(np.float32), 1, mode="edge")
-    output = np.zeros_like(image, dtype=np.float32)
-    for row in range(image.shape[0]):
-        for col in range(image.shape[1]):
-            patch = padded[row : row + 3, col : col + 3]
-            output[row, col] = float(np.sum(patch * kernel))
-    output -= output.min()
-    max_value = float(output.max() or 1.0)
-    output = (output / max_value) * 255.0
-    return output.astype(np.uint8)
-
-
-def feature_maps(image: np.ndarray) -> list[dict[str, Any]]:
-    """Build lightweight filtered feature maps for one image segment."""
-
-    return [
-        {
-            "name": name,
-            "image_uri": to_data_uri(_convolve(image, kernel)),
-        }
-        for name, kernel in FILTERS.items()
-    ]
-
-
 def build_visualization(kind: str, *, runtime: BaselineRuntime, inference: InferenceResult) -> dict[str, Any]:
     """Build one supported visualization payload for an inference result."""
 
     normalized = str(kind or "feature_maps").strip().lower()
+    classifier = runtime.classifier_for_level(inference.level)
+
     if normalized == "feature_maps":
         return {
             "kind": normalized,
             "items": [
                 {
-                    "segment": segment_name,
-                    "maps": feature_maps(image),
+                    "segment": "scene",
+                    "maps": [
+                        {"name": item["name"], "image_uri": to_data_uri(item["image"], cmap="viridis")}
+                        for item in classifier.activation_maps(inference.input_image)
+                    ],
                 }
-                for segment_name, image in inference.segments.items()
             ],
         }
+
     if normalized == "prototype":
-        items = []
+        items: list[dict[str, Any]] = []
         if "digit" in inference.prediction:
             digit = int(inference.prediction["digit"])
             items.append(
                 {
-                    "label": f"Prototype {digit}",
-                    "image_uri": to_data_uri(runtime.single_model.class_mean(digit)),
-                    "coefficient_uri": to_data_uri(runtime.single_model.coefficient_map(digit)),
+                    "label": f"MNIST mean {digit}",
+                    "image_uri": to_data_uri(classifier.class_mean(digit), cmap="binary_r"),
                 }
             )
         if "left_digit" in inference.prediction:
             left_digit = int(inference.prediction["left_digit"])
             items.append(
                 {
-                    "label": f"Left prototype {left_digit}",
-                    "image_uri": to_data_uri(runtime.single_model.class_mean(left_digit)),
-                    "coefficient_uri": to_data_uri(runtime.single_model.coefficient_map(left_digit)),
+                    "label": f"Left mean {left_digit}",
+                    "image_uri": to_data_uri(classifier.class_mean(left_digit), cmap="binary_r"),
                 }
             )
         if "right_digit" in inference.prediction:
             right_digit = int(inference.prediction["right_digit"])
             items.append(
                 {
-                    "label": f"Right prototype {right_digit}",
-                    "image_uri": to_data_uri(runtime.single_model.class_mean(right_digit)),
-                    "coefficient_uri": to_data_uri(runtime.single_model.coefficient_map(right_digit)),
+                    "label": f"Right mean {right_digit}",
+                    "image_uri": to_data_uri(classifier.class_mean(right_digit), cmap="binary_r"),
                 }
             )
-        if "operator" in inference.prediction:
-            operator = str(inference.prediction["operator"])
+        for item in classifier.first_layer_weight_maps(limit=6):
             items.append(
                 {
-                    "label": f"Operator template {OPERATORS[operator]['symbol']}",
-                    "image_uri": to_data_uri(runtime.operator_model.template(operator)),
+                    "label": item["label"],
+                    "image_uri": to_data_uri(item["image"], cmap="bone"),
                 }
             )
         return {"kind": normalized, "items": items}
+
     if normalized == "comparison":
-        items = []
-        for name, image in inference.segments.items():
-            items.append({"label": f"{name} input", "image_uri": to_data_uri(image)})
+        items = [
+            {
+                "label": "generated scene",
+                "image_uri": to_data_uri(inference.input_image, cmap="binary_r"),
+            }
+        ]
+        for source in inference.example.comparison_sources:
+            items.append(
+                {
+                    "label": str(source["label"]),
+                    "image_uri": to_data_uri(source["image"], cmap=str(source.get("cmap", "binary_r"))),
+                }
+            )
         if inference.result_image_uri:
             items.append({"label": "predicted result", "image_uri": inference.result_image_uri})
         return {"kind": normalized, "items": items}
+
     raise ValueError(f"Unsupported visualization kind: {kind}")

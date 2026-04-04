@@ -36,6 +36,20 @@ def format_example_detail(payload: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def format_dataset_detail(payload: dict[str, Any]) -> str:
+    """Render one raw-MNIST dataset sample payload for terminal display."""
+
+    lines = [
+        f"Split: {payload['split']}",
+        f"Index: {payload['index']}",
+        f"Label: {payload['digit']}",
+        f"Shape: {payload['image_shape'][0]}x{payload['image_shape'][1]}",
+    ]
+    if payload.get("output_path"):
+        lines.append(f"PNG: {payload['output_path']}")
+    return "\n".join(lines)
+
+
 def format_generation(payload: dict[str, Any]) -> str:
     """Render one batch-generation summary for terminal display."""
 
@@ -83,6 +97,34 @@ def format_visualization(payload: dict[str, Any]) -> str:
     export = payload.get("export")
     if export:
         lines.append(f"Exported {export['count']} files to {export['out_dir']}")
+    return "\n".join(lines)
+
+
+def format_training_list(payload: dict[str, Any]) -> str:
+    """Render the available training presets for terminal display."""
+
+    lines = ["Training presets:"]
+    for preset in payload["presets"]:
+        lines.append(
+            f"- {preset['name']} [{preset['level']}] "
+            f"{preset['epochs']} epochs, batch {preset['batch_size']}, "
+            f"train={preset['train_size']}, test={preset['test_size']}"
+        )
+    return "\n".join(lines)
+
+
+def format_training_run(payload: dict[str, Any]) -> str:
+    """Render one completed training run summary for terminal display."""
+
+    lines = [
+        f"Preset: {payload['preset']}",
+        f"Level: {payload['level']}",
+        f"Artifact: {payload['artifact_path']}",
+    ]
+    evaluation = payload.get("evaluation") or {}
+    if evaluation:
+        metrics = ", ".join(f"{key}={value:.4f}" for key, value in sorted(evaluation.items()))
+        lines.append(f"Evaluation: {metrics}")
     return "\n".join(lines)
 
 

@@ -1,41 +1,30 @@
 # dd
 
-Double-digits guided lab for AIX, exposed publicly as `doubledigits`.
+Double-digits guided lab for AIX, now restored to an MNIST-first runtime derived from the legacy notebooks.
 
 ## Current scope
-- Guided three-level web lab:
-  - single-digit recognition
-  - two-digit composition
-  - controlled arithmetic
+- Guided three-level lab:
+  - raw single-digit MNIST
+  - direct 28x56 two-digit classification
+  - direct 28x56 arithmetic scenes with embedded notebook-style operators
 - Shell-neutral CLI at `python -m dd_cli`
+- Notebook-derived Keras model presets with cached `.keras` artifacts
 - Deterministic batch export with image files, a pandas-readable manifest, and aligned NumPy arrays
-- Lightweight baseline inference plus documented proxy visualizations
-
-## Layout
-- `dd_cli/`
-- `dd_core/`
-- `dd_models/`
-- `dd_visuals/`
-- `dd_web/`
-- `tests/`
-- `docs/`
-- `scripts/`
-- `data/`
-- `models/`
-
-Stable user-facing terminal commands live in `dd_cli`. The `scripts/` directory remains reserved for one-off internal utilities.
+- Notebook-style visualizations using `binary_r`, `viridis`, and `bone`
 
 ## Install
 ```sh
 python -m pip install -r requirements.txt
 ```
 
+The modern runtime uses standalone Keras on the torch backend. That keeps the notebook-style model definitions while avoiding the old sklearn fallback.
+
 ## Local web run
 ```sh
 python run.py
 ```
 
-Or use the CLI wrapper:
+Or:
 
 ```sh
 python -m dd_cli serve
@@ -43,62 +32,87 @@ python -m dd_cli serve
 
 Then open `http://127.0.0.1:5003/`.
 
-## Terminal usage
+## CLI usage
 
-List curated examples:
-
-```sh
-python -m dd_cli examples list --level double
-```
-
-Inspect one example:
+Show one raw MNIST sample:
 
 ```sh
-python -m dd_cli examples show --level arithmetic --example-id arith_mul_34
+python -m dd_cli dataset show --split test --index 0 --out out/mnist_0.png
 ```
 
-Run inference from structured input:
+Inspect a curated arithmetic scene:
 
 ```sh
-python -m dd_cli infer --level arithmetic --left 6 --right 7 --operator multiply
+python -m dd_cli examples show --level arithmetic --example-id arith_div_84
 ```
 
-Inspect visualization payloads and optionally write PNG artifacts:
+Inspect a single-level example directly from the MNIST split:
 
 ```sh
-python -m dd_cli visualize --kind comparison --level arithmetic --example-id arith_mul_34 --write-dir out/visuals
+python -m dd_cli examples show --level single --mnist-index 0 --split test
 ```
 
-Generate a batch export:
+Run inference from structured notebook-style input:
+
+```sh
+python -m dd_cli infer --level arithmetic --left 8 --right 4 --operator divide
+```
+
+Inspect learned activations or comparison views:
+
+```sh
+python -m dd_cli visualize --kind feature_maps --level double --example-id double_12 --write-dir out/feature_maps
+python -m dd_cli visualize --kind comparison --level arithmetic --example-id arith_div_84
+```
+
+Generate a labeled batch export:
 
 ```sh
 python -m dd_cli examples generate --level double --count 12 --out out/double_batch
 ```
 
-Use `--json` with `examples list`, `examples show`, `examples generate`, `infer`, and `visualize` for machine-readable output.
+List and train notebook-derived presets:
+
+```sh
+python -m dd_cli train list
+python -m dd_cli train run --preset double_project_modelx
+```
+
+Use `--json` with `dataset show`, `examples`, `infer`, `visualize`, and `train` commands for scripting.
+
+## First-run model behavior
+
+If a cached `.keras` artifact is missing, the runtime trains the default notebook-derived preset for that level and stores it in `models/`.
+
+Default presets:
+- `single_mnist_dense`
+- `double_project_modelx`
+- `arithmetic_modelx`
+
+Override them with:
+- `DOUBLEDIGITS_SINGLE_PRESET`
+- `DOUBLEDIGITS_DOUBLE_PRESET`
+- `DOUBLEDIGITS_ARITHMETIC_PRESET`
+
+Training-size overrides are also supported per level:
+- `DOUBLEDIGITS_TRAIN_SIZE_SINGLE`, `DOUBLEDIGITS_TEST_SIZE_SINGLE`, `DOUBLEDIGITS_EPOCHS_SINGLE`
+- `DOUBLEDIGITS_TRAIN_SIZE_DOUBLE`, `DOUBLEDIGITS_TEST_SIZE_DOUBLE`, `DOUBLEDIGITS_EPOCHS_DOUBLE`
+- `DOUBLEDIGITS_TRAIN_SIZE_ARITHMETIC`, `DOUBLEDIGITS_TEST_SIZE_ARITHMETIC`, `DOUBLEDIGITS_EPOCHS_ARITHMETIC`
 
 ## Batch export layout
 
-`python -m dd_cli examples generate` writes one level-specific directory containing:
-
+`python -m dd_cli examples generate` writes:
 - `images/`
-  - one PNG per generated example
 - `manifest.csv`
-  - the authoritative metadata table, readable directly in pandas
 - `dataset.npz`
-  - aligned arrays for `images`, `targets`, `ids`, and `metadata_json`
 
-Row order in `manifest.csv` matches array order in `dataset.npz`. Gamma does not create train/validation/test splits by default.
+`manifest.csv` is the authoritative metadata table. Row order matches `dataset.npz`.
 
 ## Visualization kinds
 
-The stable Gamma visualization set is:
-
 - `feature_maps`
-  - fixed-filter responses over the current image segments
+  - learned activation maps rendered with `viridis`
 - `prototype`
-  - class-mean and coefficient-map views for the current prediction path
+  - MNIST class means and first-layer notebook-style weight maps rendered with `binary_r` and `bone`
 - `comparison`
-  - the input segments and, when available, the rendered arithmetic result
-
-These payloads are shared between the CLI and the web API.
+  - the generated scene, its MNIST ground-truth source tiles, the notebook operator overlay when applicable, and the predicted arithmetic result image

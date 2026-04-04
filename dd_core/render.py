@@ -5,68 +5,76 @@ from __future__ import annotations
 import base64
 from io import BytesIO
 from pathlib import Path
-from typing import Any
 
 import numpy as np
+from matplotlib import colormaps
 from PIL import Image
 
-from dd_core.constants import ARITHMETIC_SCENE_SIZE, DIGIT_SIZE, DOUBLE_SCENE_SIZE
+from dd_core.constants import DIGIT_SIZE, DOUBLE_SCENE_SIZE
 from dd_core.dataset import digit_variant
 
 
 def compose_pair(left_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
-    """Compose two digit tiles into one fixed-width two-digit scene."""
+    """Compose two MNIST digit tiles into the notebook-style 28x56 scene."""
 
-    canvas = np.zeros(DOUBLE_SCENE_SIZE, dtype=np.uint8)
-    canvas[:, : DIGIT_SIZE[1]] = left_image
-    canvas[:, DIGIT_SIZE[1] :] = right_image
-    return canvas
+    canvas = np.zeros(DOUBLE_SCENE_SIZE, dtype=np.float32)
+    canvas[:, : DIGIT_SIZE[1]] = np.asarray(left_image, dtype=np.float32)
+    canvas[:, DIGIT_SIZE[1] :] = np.asarray(right_image, dtype=np.float32)
+    return np.clip(canvas, 0, 255).astype(np.uint8)
 
 
 def operator_canvas(operator: str) -> np.ndarray:
-    """Render one arithmetic operator glyph onto a digit-sized canvas."""
+    """Render one arithmetic operator onto a notebook-style 28x56 scene."""
 
-    canvas = np.zeros(DIGIT_SIZE, dtype=np.uint8)
-    mid = DIGIT_SIZE[0] // 2
-    if operator == "add":
-        canvas[mid - 1 : mid + 2, 7:21] = 220
-        canvas[7:21, mid - 1 : mid + 2] = 220
-    elif operator == "subtract":
-        canvas[mid - 1 : mid + 2, 7:21] = 220
-    elif operator == "multiply":
-        for index in range(7, 21):
-            offset = index - 7
-            canvas[index, 7 + offset] = 220
-            canvas[index, 20 - offset] = 220
-    else:
-        raise ValueError(f"Unsupported operator: {operator}")
-    return canvas
+    return _draw_operator(np.zeros(DOUBLE_SCENE_SIZE, dtype=np.float32), operator)
 
 
-def compose_arithmetic(left_image: np.ndarray, operator_image: np.ndarray, right_image: np.ndarray) -> np.ndarray:
-    """Compose a left digit, operator tile, and right digit into one scene."""
+def overlay_operator_scene(left_image: np.ndarray, right_image: np.ndarray, operator: str) -> np.ndarray:
+    """Compose a notebook-style arithmetic scene with the operator overlaid in the center."""
 
-    canvas = np.zeros(ARITHMETIC_SCENE_SIZE, dtype=np.uint8)
-    canvas[:, : DIGIT_SIZE[1]] = left_image
-    canvas[:, DIGIT_SIZE[1] : DIGIT_SIZE[1] * 2] = operator_image
-    canvas[:, DIGIT_SIZE[1] * 2 :] = right_image
-    return canvas
+    image = compose_pair(left_image, right_image).astype(np.float32)
+    return _draw_operator(image, operator)
 
 
-def number_to_image(number: int, *, variants: tuple[int, int] = (0, 1)) -> np.ndarray:
-    """Render one integer value as either one or two digit tiles."""
+def number_to_image(number: int, *, variants: tuple[int, int] = (0, 1), split: str = "test") -> np.ndarray:
+    """Render one integer result value as one or two MNIST digit tiles."""
 
     value = abs(int(number))
     digits = [value] if value < 10 else [value // 10, value % 10]
     if len(digits) == 1:
-        return digit_variant(digits[0], variants[0])
-    return compose_pair(digit_variant(digits[0], variants[0]), digit_variant(digits[1], variants[1]))
+        return digit_variant(digits[0], variants[0], split=split)
+    return compose_pair(
+        digit_variant(digits[0], variants[0], split=split),
+        digit_variant(digits[1], variants[1], split=split),
+    )
 
 
-def to_png_bytes(image: np.ndarray, *, scale: int = 4) -> bytes:
-    """Encode one grayscale image array as PNG bytes."""
+def apply_colormap(image: np.ndarray, *, cmap: str = "binary_r") -> np.ndarray:
+    """Convert one grayscale image into an RGB image using a named Matplotlib colormap."""
 
-    pil_image = Image.fromarray(np.clip(image, 0, 255).astype(np.uint8), mode="L")
+    array = np.asarray(image, dtype=np.float32)
+    if array.ndim == 3:
+        return np.clip(array, 0, 255).astype(np.uint8)
+    normalized = array - float(array.min())
+    scale = float(normalized.max() or 1.0)
+    mapped = colormaps[cmap](normalized / scale)[..., :3]
+    return np.clip(mapped * 255.0, 0, 255).astype(np.uint8)
+
+
+def to_png_bytes(image: np.ndarray, *, scale: int = 4, cmap: str | None = None) -> bytes:
+    """Encode one image array as PNG bytes, optionally using a named colormap."""
+
+    array = np.asarray(image)
+    if cmap:
+        array = apply_colormap(array, cmap=cmap)
+        mode = "RGB"
+    elif array.ndim == 3:
+        array = np.clip(array, 0, 255).astype(np.uint8)
+        mode = "RGB"
+    else:
+        array = np.clip(array, 0, 255).astype(np.uint8)
+        mode = "L"
+    pil_image = Image.fromarray(array, mode=mode)
     if scale > 1:
         pil_image = pil_image.resize((pil_image.width * scale, pil_image.height * scale), resample=Image.Resampling.NEAREST)
     buffer = BytesIO()
@@ -74,12 +82,12 @@ def to_png_bytes(image: np.ndarray, *, scale: int = 4) -> bytes:
     return buffer.getvalue()
 
 
-def write_png(image: np.ndarray, path: str | Path, *, scale: int = 1) -> Path:
-    """Write one grayscale image array to disk as a PNG file."""
+def write_png(image: np.ndarray, path: str | Path, *, scale: int = 1, cmap: str | None = None) -> Path:
+    """Write one image array to disk as a PNG file."""
 
     output_path = Path(path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_bytes(to_png_bytes(image, scale=scale))
+    output_path.write_bytes(to_png_bytes(image, scale=scale, cmap=cmap))
     return output_path
 
 
@@ -93,8 +101,70 @@ def data_uri_to_png_bytes(data_uri: str) -> bytes:
     return base64.b64decode(raw.split(marker, maxsplit=1)[1].encode("ascii"))
 
 
-def to_data_uri(image: np.ndarray, *, scale: int = 4) -> str:
-    """Encode one grayscale image array as a PNG data URI."""
+def to_data_uri(image: np.ndarray, *, scale: int = 4, cmap: str | None = None) -> str:
+    """Encode one image array as a PNG data URI."""
 
-    encoded = base64.b64encode(to_png_bytes(image, scale=scale)).decode("ascii")
+    encoded = base64.b64encode(to_png_bytes(image, scale=scale, cmap=cmap)).decode("ascii")
     return f"data:image/png;base64,{encoded}"
+
+
+def _normalize_notebook_operator(operator: str) -> str:
+    """Map runtime operator tokens onto the notebook operation names."""
+
+    normalized = str(operator or "").strip().lower()
+    mapping = {
+        "add": "Add",
+        "subtract": "Subtract",
+        "multiply": "Multiply",
+        "divide": "Divide",
+        "+": "Add",
+        "-": "Subtract",
+        "x": "Multiply",
+        "*": "Multiply",
+        "×": "Multiply",
+        "/": "Divide",
+        "÷": "Divide",
+    }
+    if normalized not in mapping:
+        raise ValueError(f"Unsupported operator: {operator}")
+    return mapping[normalized]
+
+
+def _draw_operator(image: np.ndarray, operator: str) -> np.ndarray:
+    """Apply the notebook operator-drawing routine to one 28x56 scene image."""
+
+    output = np.asarray(image, dtype=np.float32).copy()
+    operation = _normalize_notebook_operator(operator)
+    if operation == "Multiply":
+        for row in range(11, 18):
+            output[28 - row, row + 14] = 255
+            output[row, row + 14] = 255
+            output[row, row + 15] /= 2
+            output[row, row + 15] += 255 / row
+            output[row, row + 13] /= 2
+            output[row, row + 13] += 50 + 512 / row
+            output[28 - row, row + 13] /= 2
+            output[28 - row, row + 13] += 100 + 255 / (28 - row)
+            output[28 - row, row + 15] /= 2
+            output[28 - row, row + 15] += 512 / (28 - row)
+    elif operation == "Divide":
+        for row in range(8, 21):
+            output[28 - row, row + 14] = 255
+            output[28 - row, row + 13] /= 2
+            output[28 - row, row + 13] += 60 + 255 / row
+            output[28 - row, row + 15] /= 2
+            output[28 - row, row + 15] += 512 / (28 - row)
+    else:
+        output[14, 24:32] = 255
+        if (output[13, 24:32] > 156).any():
+            output[13, 24:32] /= 2
+        output[13, 24:32] += 99
+        if (output[15, 25:31] > 222).any():
+            output[15, 25:31] /= 2
+        output[15, 25:31] += 33
+        if operation == "Add":
+            output[10:18, 28] = 255
+            if (output[10:18, 27] > 156).any():
+                output[10:18, 27] /= 2
+            output[10:18, 27] += 99
+    return np.clip(output, 0, 255).astype(np.uint8)

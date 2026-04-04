@@ -3,48 +3,50 @@
 Status refresh: 2026-04-04
 
 ## Current product shape
-- The project is a guided lab, not a notebook host and not a training console.
-- The core teaching arc still runs through three levels:
-  - single-digit recognition
-  - two-digit composition
-  - arithmetic scenes built from two digits and an operator
-- Gamma adds a first-class terminal interface so the same lab concepts can be used from a regular command line as well as through the web app.
+- The project is a guided lab plus a notebook-fidelity CLI, not a notebook host.
+- The runtime has been moved back onto MNIST rather than the temporary sklearn digits fallback.
+- The three levels now map to notebook-derived data shapes:
+  - single: raw `28x28` MNIST
+  - double: direct `28x56` two-digit scenes
+  - arithmetic: direct `28x56` arithmetic scenes with embedded operators
 
-## Gamma command surface
-- `python -m dd_cli examples list`
-  - list curated examples for one level
-- `python -m dd_cli examples show`
-  - inspect one curated or structured example
-- `python -m dd_cli examples generate`
-  - generate a deterministic labeled batch for one level
+## CLI surface
+- `python -m dd_cli dataset show`
+  - inspect raw MNIST by split and absolute index
+- `python -m dd_cli examples list|show|generate`
+  - inspect curated scenes or generate deterministic labeled batches
 - `python -m dd_cli infer`
-  - run baseline inference for one example or structured input
+  - run notebook-derived inference directly from the local runtime
 - `python -m dd_cli visualize`
-  - build one stable visualization payload and optionally export PNG artifacts
+  - build activation, prototype, and comparison payloads
+- `python -m dd_cli train list|run`
+  - inspect and train notebook-derived Keras presets
 - `python -m dd_cli serve`
-  - run the same standalone Flask app that `run.py` launches
+  - run the standalone Flask app
 
-The CLI is deliberately shell-neutral. Stable user-facing commands belong in `dd_cli`; `scripts/` stays reserved for ad hoc internal helpers.
-
-## Batch export contract
-- Generated batches are deterministic and level-specific.
-- Gamma writes three artifacts together:
-  - `images/` for direct inspection
-  - `manifest.csv` as the authoritative metadata table
-  - `dataset.npz` as the aligned numeric bundle
-- Gamma does not introduce train/validation/test splitting or training workflows. Those remain future concerns for a training-focused phase.
+## Model strategy
+- The runtime no longer decomposes double/arithmetic scenes into separate digit predictions plus templates.
+- Double and arithmetic scenes are classified directly as whole notebook-style `28x56` images.
+- The active default presets are dense notebook models because they line up best with the original notebook training flow and weight-viewing patterns.
+- Alternative notebook presets remain available through `dd_cli train`.
 
 ## Visualization semantics
 - `feature_maps`
-  - proxy views created by fixed image filters over the current segments
+  - real activations from the selected notebook-derived model, rendered with `viridis`
 - `prototype`
-  - class-mean and coefficient-map views derived from the baseline classifier and operator templates
+  - MNIST class means and first-layer weight maps, rendered with `binary_r` and `bone`
 - `comparison`
-  - the current input segments and the rendered arithmetic result when available
+  - generated scene plus the MNIST source digits and arithmetic-result context
 
-These are intentionally lightweight explanatory artifacts. They do not claim parity with notebook-era learned CNN activations. That learned-activation path remains deferred until the project has exported learned models worth inspecting.
+## Batch export contract
+- Generated batches remain deterministic and level-specific.
+- The export bundle is still:
+  - `images/`
+  - `manifest.csv`
+  - `dataset.npz`
+- Batch exports intentionally avoid train/validation/test splitting; the training CLI owns training concerns.
 
 ## Deferred after Gamma
-- Web-copy polish and broader frontend refinement move to Delta.
-- Handwriting input, handwritten-style output polish, retraining flows, and alternative-model experiments stay outside Gamma.
-- TensorFlow Estimator-era code remains documentation/provenance material rather than active runtime code.
+- Web-copy and UI refinement still belong to Delta.
+- Estimator-era TensorFlow flows remain documentation/provenance only.
+- Stacking and broader research-only notebook experiments are not part of the active runtime path yet.
