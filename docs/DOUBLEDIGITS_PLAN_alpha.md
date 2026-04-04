@@ -1,4 +1,6 @@
-# Double-digits Standalone AIX Arm Plan
+# Double-digits Standalone and AIX-Arm Plan 
+# *Phase Alpha: The "Migration"*
+# **double-digits --> dd**
 
 ## Summary
 - Build `dd` as a standalone Flask-based lab that follows the AIX sibling-arm pattern, but use the public AIX slug `doubledigits` rather than `dd` so the arm reads clearly in the hub and routes.
