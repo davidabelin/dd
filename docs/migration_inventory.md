@@ -1,6 +1,6 @@
 # Double-digits Migration Inventory
 
-Status refresh: 2026-04-04
+Status refresh: 2026-04-05
 
 This is the working ledger for notebook-to-`dd` migration. It is grouped by capability so later phases can answer where each notebook feature now lives without reopening the notebooks.
 
@@ -44,13 +44,13 @@ This is the working ledger for notebook-to-`dd` migration. It is grouped by capa
   - Status: `done`
   - Source notebook(s): `double_digits_with_MNIST.ipynb`, `digits_project.ipynb`
   - Source lineage: MNIST import, normalization, reshape, `scale_array`
-  - Current `dd` state/path: `dd_core/dataset.py`
+  - Current `dd` state/path: `dd_core/dataset.py`, bundled `data/mnist.npz`
   - Target destination: keep MNIST loading and helper access in `dd_core.dataset`
   - CLI exposure: `web+cli`
   - Docs/UI destination: `README.md`, `docs/artifact_provenance.md`
   - Planned tests: dataset-shape coverage in `tests/test_core.py` and CLI coverage for `dataset show`
   - Docstring requirement: full module and function docstrings on split access, normalization, and record helpers
-  - Gamma action: keep MNIST as the only active digit bank
+  - Delta action: prefer the bundled archive for lightweight local/cloud reads, with Keras dataset fallback only when the archive is absent
 
 - [x] Notebook-style scene composition and operator placement
   - Status: `done`
@@ -244,13 +244,13 @@ This is the working ledger for notebook-to-`dd` migration. It is grouped by capa
   - Status: `done`
   - Source notebook(s): `digits_project.ipynb`, `minimal_convolution_double_digits.ipynb`, `digits_classifier.ipynb`, `double_digits_classifier.ipynb`
   - Source lineage: tutorial progression from raw digits to composition to arithmetic
-  - Current `dd` state/path: `dd_web/templates/pages/home.html`, `dd_web/static/js/doubledigits.js`
+  - Current `dd` state/path: `dd_web/templates/pages/home.html`, `dd_web/static/js/doubledigits.js`, `dd_web/static/css/doubledigits.css`
   - Target destination: keep the guided shell in `dd_web`
   - CLI exposure: `web-only`
   - Docs/UI destination: live web UI, `README.md`
   - Planned tests: `tests/test_app.py::test_home_page_renders`
   - Docstring requirement: comments only where frontend logic is non-obvious
-  - Gamma action: leave major UI refinement to Delta
+  - Delta action: notebook-style anchored sections, advanced preset drawers, explicit run states, and comparison/prototype/feature-map panels now live in the web app
 
 - [x] Runtime/API parity and local serving
   - Status: `done`
@@ -262,7 +262,7 @@ This is the working ledger for notebook-to-`dd` migration. It is grouped by capa
   - Docs/UI destination: `README.md`, `app.aix.yaml`
   - Planned tests: endpoint coverage in `tests/test_app.py` plus serve-runner coverage in `tests/test_cli.py`
   - Docstring requirement: preserve endpoint, runtime, and serve-helper docstrings
-  - Gamma action: keep API, CLI, and local serve behavior aligned
+  - Delta action: lazy runtime loading, optional preset selection, `/api/v1/presets`, `/healthz`, mount-safe frontend config, and the measured cloud deployment fix (`F4` plus bundled MNIST data) are now aligned across standalone and mounted serving
 
 - [x] Canonical `dd_cli` command surface
   - Status: `done`
@@ -282,25 +282,25 @@ This is the working ledger for notebook-to-`dd` migration. It is grouped by capa
   - Status: `done`
   - Source notebook(s): all notebook groups inform this layer
   - Source lineage: migration explanation, notebook restoration rationale, CLI documentation
-  - Current `dd` state/path: `README.md`, `docs/doubledigits_design.md`, `docs/artifact_provenance.md`, `docs/DOUBLEDIGITS_PLAN_gamma.md`
+  - Current `dd` state/path: `README.md`, `docs/doubledigits_design.md`, `docs/artifact_provenance.md`, `docs/DOUBLEDIGITS_PLAN_gamma.md`, `docs/DOUBLEDIGITS_PLAN_delta.md`
   - Target destination: keep notebook-restoration narrative in docs rather than code comments
   - CLI exposure: `docs-only`
   - Docs/UI destination: the files listed above
   - Planned tests: documentation review only
   - Docstring requirement: N/A for prose docs
-  - Gamma action: keep docs aligned to the actual MNIST runtime, not the temporary sklearn detour
+  - Delta action: docs now cover the notebook-style web pass, mounted `/doubledigits` routing, and cloud read-only artifact strategy
 
-- [ ] Guided web copy and notebook exercise prose refinement
-  - Status: `partial`
+- [x] Guided web copy and notebook exercise prose refinement
+  - Status: `done`
   - Source notebook(s): `digits_classifier.ipynb`, `double_digits_classifier.ipynb`, `minimal_convolution_double_digits.ipynb`, `digits_project.ipynb`
   - Source lineage: tutorial prompts and comparison language
-  - Current `dd` state/path: only partially reflected in `dd_web/templates/pages/home.html`
-  - Target destination: finish the copy pass during Delta
+  - Current `dd` state/path: `dd_web/templates/pages/home.html`
+  - Target destination: keep notebook-style prose in the shipped web template
   - CLI exposure: `docs-only`
   - Docs/UI destination: web templates and future inline help
   - Planned tests: manual content review only
   - Docstring requirement: N/A for prose
-  - Gamma action: leave detailed web narrative polish to Delta
+  - Delta action: completed with notebook-derived headings, captions, and guided section copy
 
 - [x] Migration provenance ledger
   - Status: `done`

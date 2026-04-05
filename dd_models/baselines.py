@@ -25,6 +25,7 @@ class InferenceResult:
     """Normalized inference payload shared by the web app and CLI."""
 
     level: str
+    preset_name: str
     prediction: dict[str, Any]
     confidence: float
     top_classes: list[dict[str, Any]]
@@ -660,13 +661,21 @@ def list_training_presets(level: str | None = None) -> list[dict[str, Any]]:
 class NotebookClassifier:
     """One cached notebook-derived Keras model with training and inference helpers."""
 
-    def __init__(self, *, models_dir: str, preset_name: str, cache_artifact: bool = True) -> None:
+    def __init__(
+        self,
+        *,
+        models_dir: str,
+        preset_name: str,
+        cache_artifact: bool = True,
+        allow_training: bool = True,
+    ) -> None:
         if preset_name not in PRESETS:
             raise KeyError(f"Unknown model preset: {preset_name}")
         self.spec = PRESETS[preset_name]
         self.models_dir = Path(models_dir)
         self.models_dir.mkdir(parents=True, exist_ok=True)
         self.cache_artifact = bool(cache_artifact)
+        self.allow_training = bool(allow_training)
         self.model_path = self.models_dir / f"{self.spec.artifact_name}.keras"
         self.metadata_path = self.models_dir / f"{self.spec.artifact_name}.json"
         self._model: Model | None = None
@@ -679,8 +688,13 @@ class NotebookClassifier:
         if self._model is not None:
             return self._model
         if self.cache_artifact and self.model_path.exists():
-            self._model = keras.saving.load_model(self.model_path)
+            self._model = keras.saving.load_model(self.model_path, compile=False)
             return self._model
+        if not self.allow_training:
+            raise FileNotFoundError(
+                f"Model artifact for preset '{self.spec.name}' is not available at '{self.model_path}'. "
+                "Train it with `python -m dd_cli train run --preset ...` before using this preset in the web app."
+            )
         self.train()
         if self._model is None:
             raise RuntimeError(f"Failed to load or train model preset '{self.spec.name}'.")
@@ -698,8 +712,12 @@ class NotebookClassifier:
     ) -> dict[str, Any]:
         """Train this preset with notebook defaults or explicit overrides."""
 
+        if not self.allow_training:
+            raise RuntimeError(
+                f"Training is disabled for preset '{self.spec.name}' in this runtime."
+            )
         if not force and self.cache_artifact and self.model_path.exists():
-            self._model = keras.saving.load_model(self.model_path)
+            self._model = keras.saving.load_model(self.model_path, compile=False)
             return self.training_metadata()
 
         set_random_seed(seed)
@@ -932,31 +950,27 @@ def _reshape_vector_to_grid(values: np.ndarray) -> np.ndarray:
 class BaselineRuntime:
     """Notebook-derived inference runtime for the guided Double-digits app."""
 
-    def __init__(self, *, models_dir: str, cache_artifact: bool = True) -> None:
+    def __init__(self, *, models_dir: str, cache_artifact: bool = True, allow_training: bool = True) -> None:
         self.examples = ExampleCatalog()
-        self.single_model = NotebookClassifier(
-            models_dir=models_dir,
-            preset_name=os.getenv("DOUBLEDIGITS_SINGLE_PRESET", DEFAULT_PRESETS[SINGLE_LEVEL]),
-            cache_artifact=cache_artifact,
-        )
-        self.double_model = NotebookClassifier(
-            models_dir=models_dir,
-            preset_name=os.getenv("DOUBLEDIGITS_DOUBLE_PRESET", DEFAULT_PRESETS[DOUBLE_LEVEL]),
-            cache_artifact=cache_artifact,
-        )
-        self.arithmetic_model = NotebookClassifier(
-            models_dir=models_dir,
-            preset_name=os.getenv("DOUBLEDIGITS_ARITHMETIC_PRESET", DEFAULT_PRESETS[ARITHMETIC_LEVEL]),
-            cache_artifact=cache_artifact,
-        )
+        self.models_dir = str(models_dir)
+        self.cache_artifact = bool(cache_artifact)
+        self.allow_training = bool(allow_training)
+        self.default_presets = {
+            SINGLE_LEVEL: os.getenv("DOUBLEDIGITS_SINGLE_PRESET", DEFAULT_PRESETS[SINGLE_LEVEL]),
+            DOUBLE_LEVEL: os.getenv("DOUBLEDIGITS_DOUBLE_PRESET", DEFAULT_PRESETS[DOUBLE_LEVEL]),
+            ARITHMETIC_LEVEL: os.getenv("DOUBLEDIGITS_ARITHMETIC_PRESET", DEFAULT_PRESETS[ARITHMETIC_LEVEL]),
+        }
+        self._classifier_cache: dict[tuple[str, str], NotebookClassifier] = {}
 
-    def infer_from_example(self, example: Example) -> InferenceResult:
+    def infer_from_example(self, example: Example, *, preset: str | None = None) -> InferenceResult:
         """Run direct notebook-style inference for one prepared example."""
 
+        classifier = self.classifier_for_level(example.level, preset=preset)
         if example.level == SINGLE_LEVEL:
-            prediction, confidence, top_classes, _ = self.single_model.predict(example.image)
+            prediction, confidence, top_classes, _ = classifier.predict(example.image)
             return InferenceResult(
                 level=example.level,
+                preset_name=classifier.spec.name,
                 prediction={"digit": prediction},
                 confidence=confidence,
                 top_classes=top_classes,
@@ -965,9 +979,10 @@ class BaselineRuntime:
                 example=example,
             )
         if example.level == DOUBLE_LEVEL:
-            prediction, confidence, top_classes, _ = self.double_model.predict(example.image)
+            prediction, confidence, top_classes, _ = classifier.predict(example.image)
             return InferenceResult(
                 level=example.level,
+                preset_name=classifier.spec.name,
                 prediction={"left_digit": prediction // 10, "right_digit": prediction % 10, "value": prediction},
                 confidence=confidence,
                 top_classes=top_classes,
@@ -975,9 +990,10 @@ class BaselineRuntime:
                 input_image=example.image,
                 example=example,
             )
-        prediction, confidence, top_classes, _ = self.arithmetic_model.predict(example.image)
+        prediction, confidence, top_classes, _ = classifier.predict(example.image)
         return InferenceResult(
             level=example.level,
+            preset_name=classifier.spec.name,
             prediction={
                 "left_digit": int(example.metadata["left"]),
                 "right_digit": int(example.metadata["right"]),
@@ -996,14 +1012,25 @@ class BaselineRuntime:
             result_image_uri=ExampleCatalog.render_result_image(prediction),
         )
 
-    def classifier_for_level(self, level: str) -> NotebookClassifier:
+    def classifier_for_level(self, level: str, *, preset: str | None = None) -> NotebookClassifier:
         """Return the level-appropriate classifier wrapper."""
 
         normalized = str(level).strip().lower()
-        if normalized == SINGLE_LEVEL:
-            return self.single_model
-        if normalized == DOUBLE_LEVEL:
-            return self.double_model
-        if normalized == ARITHMETIC_LEVEL:
-            return self.arithmetic_model
-        raise ValueError(f"Unsupported level: {level}")
+        if normalized not in {SINGLE_LEVEL, DOUBLE_LEVEL, ARITHMETIC_LEVEL}:
+            raise ValueError(f"Unsupported level: {level}")
+        preset_name = str(preset or self.default_presets[normalized]).strip()
+        if preset_name not in PRESETS:
+            raise KeyError(f"Unknown model preset: {preset_name}")
+        if PRESETS[preset_name].level != normalized:
+            raise ValueError(f"Preset '{preset_name}' does not belong to level '{normalized}'.")
+        cache_key = (normalized, preset_name)
+        classifier = self._classifier_cache.get(cache_key)
+        if classifier is None:
+            classifier = NotebookClassifier(
+                models_dir=self.models_dir,
+                preset_name=preset_name,
+                cache_artifact=self.cache_artifact,
+                allow_training=self.allow_training,
+            )
+            self._classifier_cache[cache_key] = classifier
+        return classifier

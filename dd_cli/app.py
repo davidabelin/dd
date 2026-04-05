@@ -106,11 +106,13 @@ def build_parser() -> argparse.ArgumentParser:
 
     infer_parser = subparsers.add_parser("infer", help="Run baseline inference on one example or structured input.")
     _add_example_selector_arguments(infer_parser)
+    infer_parser.add_argument("--preset", help="Optional notebook-derived preset override.")
     infer_parser.add_argument("--json", dest="as_json", action="store_true", help="Emit JSON instead of text.")
 
     visualize_parser = subparsers.add_parser("visualize", help="Build visualization payloads for one example.")
     _add_example_selector_arguments(visualize_parser)
     visualize_parser.add_argument("--kind", required=True, choices=VISUALIZATION_KINDS, help="Visualization kind to build.")
+    visualize_parser.add_argument("--preset", help="Optional notebook-derived preset override.")
     visualize_parser.add_argument("--write-dir", help="Optional directory for exported visualization PNGs.")
     visualize_parser.add_argument("--json", dest="as_json", action="store_true", help="Emit JSON instead of text.")
 
@@ -143,7 +145,7 @@ def _handle_examples(args: argparse.Namespace) -> int:
     """Dispatch the `examples` command family."""
 
     service = _build_service()
-    catalog = service.runtime.examples
+    catalog = service.examples
 
     if args.examples_command == "list":
         listing = service.list_examples(level=args.level, count=args.count)
@@ -236,6 +238,7 @@ def _build_service() -> DoubleDigitsService:
     return DoubleDigitsService(
         models_dir=str(config["DOUBLEDIGITS_MODELS_DIR"]),
         cache_artifact=bool(config["DOUBLEDIGITS_ARTIFACT_CACHE"]),
+        allow_training=bool(config["DOUBLEDIGITS_ALLOW_TRAINING"]),
     )
 
 
@@ -272,6 +275,9 @@ def _payload_from_args(args: argparse.Namespace) -> dict[str, Any]:
     """Build one inference/visualization payload from parsed CLI arguments."""
 
     payload: dict[str, Any] = {"level": args.level, "split": args.split}
+    preset = str(getattr(args, "preset", "") or "").strip()
+    if preset:
+        payload["preset"] = preset
     if args.example_id:
         payload["example_id"] = args.example_id
         return payload
@@ -306,8 +312,8 @@ def _resolve_example_from_args(service: DoubleDigitsService, args: argparse.Name
 
     payload = _payload_from_args(args)
     if "example_id" in payload:
-        return service.runtime.examples.example_from_id(payload["level"], payload["example_id"])
-    return service.runtime.examples.structured_example(payload["level"], payload)
+        return service.examples.example_from_id(payload["level"], payload["example_id"])
+    return service.examples.structured_example(payload["level"], payload)
 
 
 def _positive_int(raw: str) -> int:

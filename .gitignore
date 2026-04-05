@@ -4,3 +4,6 @@ models/*.joblib
 models/*.keras
 models/*.json
 data/generated/
+examples/dataset.npz
+examples/manifest.csv
+examples/images/

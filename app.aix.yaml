@@ -1,12 +1,21 @@
 runtime: python314
 service: doubledigits
+instance_class: F4
 entrypoint: gunicorn --worker-tmp-dir /tmp -b :$PORT run:app
 
 env_variables:
   APP_BASE_PATH: /doubledigits
   AIX_HUB_URL: https://aix-labs.uw.r.appspot.com/
-  DOUBLEDIGITS_MODELS_DIR: /tmp/doubledigits_models
-  DOUBLEDIGITS_DATA_DIR: /tmp/doubledigits_data
+  DOUBLEDIGITS_MODELS_DIR: /srv/models
+  DOUBLEDIGITS_DATA_DIR: /srv/data
   DOUBLEDIGITS_ARTIFACT_CACHE: "1"
+  DOUBLEDIGITS_ALLOW_TRAINING: "0"
+  KERAS_HOME: /tmp/.keras
+  MPLCONFIGDIR: /tmp/matplotlib
+  DOUBLEDIGITS_TORCH_THREADS: "1"
+  OMP_NUM_THREADS: "1"
+  MKL_NUM_THREADS: "1"
+  OPENBLAS_NUM_THREADS: "1"
+  NUMEXPR_NUM_THREADS: "1"
 
 service_account: aix-admin@aix-labs.iam.gserviceaccount.com

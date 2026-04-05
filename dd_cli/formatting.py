@@ -70,6 +70,7 @@ def format_inference(payload: dict[str, Any]) -> str:
     lines = [
         f"Level: {payload['level']}",
         f"Example: {payload['example']['title']} ({payload['example']['id']})",
+        f"Preset: {payload['preset']}",
         f"Prediction: {_prediction_text(payload['prediction'])}",
         f"Confidence: {payload['confidence']:.4f}",
         f"Explanation: {payload['explanation']}",
@@ -87,7 +88,7 @@ def format_visualization(payload: dict[str, Any]) -> str:
     """Render one visualization payload for terminal display."""
 
     visualization = payload["visualization"]
-    lines = [f"Level: {payload['level']}", f"Visualization: {visualization['kind']}"]
+    lines = [f"Level: {payload['level']}", f"Preset: {visualization['preset']}", f"Visualization: {visualization['kind']}"]
     if visualization["kind"] == "feature_maps":
         for item in visualization["items"]:
             lines.append(f"- {item['segment']}: {len(item['maps'])} maps")

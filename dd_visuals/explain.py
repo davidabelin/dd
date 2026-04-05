@@ -5,7 +5,10 @@ from __future__ import annotations
 from typing import Any
 
 from dd_core.render import to_data_uri
-from dd_models.baselines import BaselineRuntime, InferenceResult
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from dd_models.baselines import BaselineRuntime, InferenceResult
 
 
 VISUALIZATION_KINDS = ("feature_maps", "prototype", "comparison")
@@ -15,7 +18,7 @@ def build_visualization(kind: str, *, runtime: BaselineRuntime, inference: Infer
     """Build one supported visualization payload for an inference result."""
 
     normalized = str(kind or "feature_maps").strip().lower()
-    classifier = runtime.classifier_for_level(inference.level)
+    classifier = runtime.classifier_for_level(inference.level, preset=inference.preset_name)
 
     if normalized == "feature_maps":
         return {

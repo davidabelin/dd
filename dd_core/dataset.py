@@ -4,11 +4,56 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
+import os
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
-from dd_models.keras_backend import keras
+
+def _bundled_mnist_path() -> Path:
+    """Resolve the preferred on-disk MNIST archive path."""
+
+    configured_dir = str(os.getenv("DOUBLEDIGITS_DATA_DIR", "")).strip()
+    if configured_dir:
+        return Path(configured_dir) / "mnist.npz"
+    return Path(__file__).resolve().parents[1] / "data" / "mnist.npz"
+
+
+def _load_mnist_arrays() -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Load raw MNIST arrays from the bundled archive or fall back to Keras."""
+
+    archive_path = _bundled_mnist_path()
+    if archive_path.exists():
+        with np.load(archive_path, allow_pickle=False) as archive:
+            return (
+                np.asarray(archive["x_train"], dtype=np.uint8),
+                np.asarray(archive["y_train"], dtype=np.int64),
+                np.asarray(archive["x_test"], dtype=np.uint8),
+                np.asarray(archive["y_test"], dtype=np.int64),
+            )
+
+    from dd_models.keras_backend import keras
+
+    (train_images, train_labels), (test_images, test_labels) = keras.datasets.mnist.load_data()
+    train_images = np.asarray(train_images, dtype=np.uint8)
+    train_labels = np.asarray(train_labels, dtype=np.int64)
+    test_images = np.asarray(test_images, dtype=np.uint8)
+    test_labels = np.asarray(test_labels, dtype=np.int64)
+
+    try:
+        archive_path.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(
+            archive_path,
+            x_train=train_images,
+            y_train=train_labels,
+            x_test=test_images,
+            y_test=test_labels,
+        )
+    except OSError:
+        pass
+
+    return train_images, train_labels, test_images, test_labels
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,11 +79,7 @@ def _group_indices(labels: np.ndarray) -> dict[int, np.ndarray]:
 def load_digit_bank() -> dict[str, Any]:
     """Load the raw MNIST train/test splits and digit-wise lookup tables."""
 
-    (train_images, train_labels), (test_images, test_labels) = keras.datasets.mnist.load_data()
-    train_images = train_images.astype(np.uint8)
-    test_images = test_images.astype(np.uint8)
-    train_labels = train_labels.astype(np.int64)
-    test_labels = test_labels.astype(np.int64)
+    train_images, train_labels, test_images, test_labels = _load_mnist_arrays()
     combined_images = np.concatenate([train_images, test_images], axis=0)
     combined_labels = np.concatenate([train_labels, test_labels], axis=0)
 

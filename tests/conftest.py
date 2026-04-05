@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import shutil
 import sys
 
 import pytest
@@ -14,7 +15,12 @@ from dd_web import create_app
 
 @pytest.fixture(scope="session")
 def shared_models_dir(tmp_path_factory):
-    return tmp_path_factory.mktemp("shared-models")
+    target = tmp_path_factory.mktemp("shared-models")
+    source = ROOT / "models"
+    for pattern in ("*.keras", "*.json"):
+        for path in source.glob(pattern):
+            shutil.copy2(path, target / path.name)
+    return target
 
 
 @pytest.fixture
@@ -27,7 +33,7 @@ def app(tmp_path: Path, shared_models_dir: Path, monkeypatch):
         {
             "TESTING": True,
             "DOUBLEDIGITS_MODELS_DIR": str(shared_models_dir),
-            "DOUBLEDIGITS_DATA_DIR": str(tmp_path / "data"),
+            "DOUBLEDIGITS_DATA_DIR": str(ROOT / "data"),
             "DOUBLEDIGITS_ARTIFACT_CACHE": True,
         }
     )

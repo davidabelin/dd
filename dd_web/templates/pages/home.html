@@ -1,155 +1,287 @@
 {% extends "base.html" %}
 {% block content %}
-<section class="hero panel">
-  <p class="eyebrow">Guided Lab</p>
-  <h1>From one handwritten digit to two-digit composition to arithmetic scenes.</h1>
-  <p class="lede">
-    This lab migrates notebook ideas into a guided interface. Each level shows the image, the model's prediction,
-    and a visual explanation of what the baseline recognizer is doing.
-  </p>
+<section class="dd-hero dd-panel">
+  <div class="dd-hero-copy">
+    <p class="dd-kicker">Notebook-Faithful Delta</p>
+    <h1>Classic MNIST lab notes, rebuilt as one online engineering notebook.</h1>
+    <p class="dd-lede">
+      The web app now follows the same progression as the old notebooks: examine one handwritten digit, compose two
+      digits into a full 28x56 scene, and then push that scene into handwritten arithmetic with notebook-era divide
+      semantics still intact.
+    </p>
+  </div>
+  <div class="dd-hero-ledger">
+    <p class="dd-ledger-title">Learning Objectives</p>
+    <ul class="dd-ledger-list">
+      <li>Inspect raw MNIST evidence before asking the model to guess.</li>
+      <li>See direct whole-scene classification for two-digit composition.</li>
+      <li>Compare generated scenes, learned activations, and notebook-style prototype views.</li>
+      <li>Switch among notebook-derived presets without leaving the browser.</li>
+    </ul>
+  </div>
 </section>
 
-<section class="overview-grid">
-  <article class="panel overview-card">
-    <h2>Level 1</h2>
-    <p>Single-digit recognition and class prototypes.</p>
-  </article>
-  <article class="panel overview-card">
-    <h2>Level 2</h2>
-    <p>Two digits composed side by side into one wider number image.</p>
-  </article>
-  <article class="panel overview-card">
-    <h2>Level 3</h2>
-    <p>Controlled arithmetic scenes built from two digits and an operator template.</p>
-  </article>
-</section>
+<nav class="dd-jumpbar dd-panel" aria-label="Notebook sections">
+  <a href="#single-lab">Single-digit Lab</a>
+  <a href="#double-lab">Two-digit Lab</a>
+  <a href="#arithmetic-lab">Arithmetic Lab</a>
+</nav>
 
-<section class="lab-grid">
-  <article class="panel lab-card" data-level="single">
-    <div class="lab-head">
-      <div>
-        <p class="eyebrow">Level 1</p>
-        <h2>Single-digit Lab</h2>
-      </div>
-      <button type="button" class="load-example">Load Curated Example</button>
+<section id="single-lab" class="dd-lab dd-panel lab-card" data-level="single">
+  <div class="dd-lab-heading">
+    <div>
+      <p class="dd-section-tag">Level 1</p>
+      <h2>Single-digit Lab</h2>
+      <p class="dd-section-note">
+        This section mirrors the notebook setup cells: start with one MNIST digit, compare it to class means, and then
+        inspect the learned first-layer and activation responses.
+      </p>
     </div>
-    <div class="controls">
-      <label>
-        <span>Curated Example</span>
-        <select class="example-select"></select>
-      </label>
-      <label>
-        <span>Digit</span>
-        <select class="digit-select"></select>
-      </label>
-      <label>
-        <span>Variant</span>
-        <select class="variant-select"></select>
-      </label>
+    <div class="dd-runbook">
+      <span>Notebook step</span>
+      <strong>Examine the data</strong>
+    </div>
+  </div>
+
+  <div class="dd-controls">
+    <label>
+      <span>Curated Example</span>
+      <select class="example-select"></select>
+    </label>
+    <label>
+      <span>Digit</span>
+      <select class="digit-select"></select>
+    </label>
+    <label>
+      <span>Variant</span>
+      <select class="variant-select"></select>
+    </label>
+    <div class="dd-action-row">
+      <button type="button" class="load-example">Load Curated Example</button>
       <button type="button" class="run-structured">Run Structured Input</button>
     </div>
-    <div class="results">
-      <div class="image-panel">
+  </div>
+
+  <details class="dd-advanced">
+    <summary>Advanced preset notebook</summary>
+    <div class="dd-advanced-grid">
+      <label>
+        <span>Model Preset</span>
+        <select class="preset-select"></select>
+      </label>
+      <dl class="preset-meta"></dl>
+    </div>
+  </details>
+
+  <p class="lab-status is-idle" role="status">Waiting for the first notebook run.</p>
+
+  <div class="dd-results">
+    <div class="dd-image-stack">
+      <figure class="dd-figure">
         <img class="example-image" alt="single digit example">
-      </div>
-      <div class="text-panel">
-        <p class="prediction"></p>
-        <p class="confidence"></p>
-        <p class="explanation"></p>
-      </div>
+        <figcaption>Input scene</figcaption>
+      </figure>
     </div>
-    <div class="visuals">
-      <div class="visual-group feature-maps"></div>
-      <div class="visual-group prototype"></div>
+    <div class="dd-readout">
+      <p class="prediction"></p>
+      <p class="confidence"></p>
+      <p class="preset-label"></p>
+      <p class="explanation"></p>
+      <dl class="example-meta"></dl>
     </div>
-  </article>
+  </div>
 
-  <article class="panel lab-card" data-level="double">
-    <div class="lab-head">
-      <div>
-        <p class="eyebrow">Level 2</p>
-        <h2>Two-digit Lab</h2>
-      </div>
-      <button type="button" class="load-example">Load Curated Example</button>
+  <div class="dd-visuals">
+    <section class="dd-visual-panel">
+      <h3>Feature Maps</h3>
+      <p>Notebook-style intermediate activations rendered with <code>viridis</code>.</p>
+      <div class="visual-group feature-maps"></div>
+    </section>
+    <section class="dd-visual-panel">
+      <h3>Prototype Notes</h3>
+      <p>MNIST class means plus first-layer weight maps rendered with <code>binary_r</code> and <code>bone</code>.</p>
+      <div class="visual-group prototype"></div>
+    </section>
+    <section class="dd-visual-panel">
+      <h3>Comparison Strip</h3>
+      <p>The generated scene placed beside its notebook-grounded source evidence.</p>
+      <div class="visual-group comparison"></div>
+    </section>
+  </div>
+</section>
+
+<section id="double-lab" class="dd-lab dd-panel lab-card" data-level="double">
+  <div class="dd-lab-heading">
+    <div>
+      <p class="dd-section-tag">Level 2</p>
+      <h2>Two-digit Lab</h2>
+      <p class="dd-section-note">
+        This section follows the old <code>doubleDigits</code> and <code>getDoubleDigits</code> flow: two MNIST digits
+        are merged into one wider image and classified directly as a whole scene rather than by post-hoc stitching.
+      </p>
     </div>
-    <div class="controls">
-      <label>
-        <span>Curated Example</span>
-        <select class="example-select"></select>
-      </label>
-      <label>
-        <span>Left Digit</span>
-        <select class="left-select"></select>
-      </label>
-      <label>
-        <span>Right Digit</span>
-        <select class="right-select"></select>
-      </label>
+    <div class="dd-runbook">
+      <span>Notebook step</span>
+      <strong>Make double digits</strong>
+    </div>
+  </div>
+
+  <div class="dd-controls">
+    <label>
+      <span>Curated Example</span>
+      <select class="example-select"></select>
+    </label>
+    <label>
+      <span>Left Digit</span>
+      <select class="left-select"></select>
+    </label>
+    <label>
+      <span>Right Digit</span>
+      <select class="right-select"></select>
+    </label>
+    <div class="dd-action-row">
+      <button type="button" class="load-example">Load Curated Example</button>
       <button type="button" class="run-structured">Run Structured Input</button>
     </div>
-    <div class="results">
-      <div class="image-panel">
+  </div>
+
+  <details class="dd-advanced">
+    <summary>Advanced preset notebook</summary>
+    <div class="dd-advanced-grid">
+      <label>
+        <span>Model Preset</span>
+        <select class="preset-select"></select>
+      </label>
+      <dl class="preset-meta"></dl>
+    </div>
+  </details>
+
+  <p class="lab-status is-idle" role="status">Waiting for the first notebook run.</p>
+
+  <div class="dd-results">
+    <div class="dd-image-stack">
+      <figure class="dd-figure">
         <img class="example-image" alt="double digit example">
-      </div>
-      <div class="text-panel">
-        <p class="prediction"></p>
-        <p class="confidence"></p>
-        <p class="explanation"></p>
-      </div>
+        <figcaption>Whole 28x56 composition</figcaption>
+      </figure>
     </div>
-    <div class="visuals">
-      <div class="visual-group feature-maps"></div>
-      <div class="visual-group prototype"></div>
+    <div class="dd-readout">
+      <p class="prediction"></p>
+      <p class="confidence"></p>
+      <p class="preset-label"></p>
+      <p class="explanation"></p>
+      <dl class="example-meta"></dl>
     </div>
-  </article>
+  </div>
 
-  <article class="panel lab-card" data-level="arithmetic">
-    <div class="lab-head">
-      <div>
-        <p class="eyebrow">Level 3</p>
-        <h2>Arithmetic Lab</h2>
-      </div>
-      <button type="button" class="load-example">Load Curated Example</button>
+  <div class="dd-visuals">
+    <section class="dd-visual-panel">
+      <h3>Feature Maps</h3>
+      <p>Layer-by-layer scene responses from the selected notebook-derived preset.</p>
+      <div class="visual-group feature-maps"></div>
+    </section>
+    <section class="dd-visual-panel">
+      <h3>Prototype Notes</h3>
+      <p>Left/right MNIST means plus weight maps for the first dense layer.</p>
+      <div class="visual-group prototype"></div>
+    </section>
+    <section class="dd-visual-panel">
+      <h3>Comparison Strip</h3>
+      <p>Source digits laid beside the composed scene so the whole-scene prediction can be checked by eye.</p>
+      <div class="visual-group comparison"></div>
+    </section>
+  </div>
+</section>
+
+<section id="arithmetic-lab" class="dd-lab dd-panel lab-card" data-level="arithmetic">
+  <div class="dd-lab-heading">
+    <div>
+      <p class="dd-section-tag">Level 3</p>
+      <h2>Arithmetic Lab</h2>
+      <p class="dd-section-note">
+        This section keeps the notebook arithmetic rules intact: addition, subtraction by larger-minus-smaller,
+        multiplication, and division with the notebook <code>99</code> sentinel when the smaller digit is zero.
+      </p>
     </div>
-    <div class="controls">
-      <label>
-        <span>Curated Example</span>
-        <select class="example-select"></select>
-      </label>
-      <label>
-        <span>Left Digit</span>
-        <select class="left-select"></select>
-      </label>
-      <label>
-        <span>Operator</span>
-        <select class="operator-select">
-          <option value="add">Add</option>
-          <option value="subtract">Subtract</option>
-          <option value="multiply">Multiply</option>
-        </select>
-      </label>
-      <label>
-        <span>Right Digit</span>
-        <select class="right-select"></select>
-      </label>
+    <div class="dd-runbook">
+      <span>Notebook step</span>
+      <strong>Handwritten arithmetic</strong>
+    </div>
+  </div>
+
+  <div class="dd-controls">
+    <label>
+      <span>Curated Example</span>
+      <select class="example-select"></select>
+    </label>
+    <label>
+      <span>Left Digit</span>
+      <select class="left-select"></select>
+    </label>
+    <label>
+      <span>Operator</span>
+      <select class="operator-select"></select>
+    </label>
+    <label>
+      <span>Right Digit</span>
+      <select class="right-select"></select>
+    </label>
+    <div class="dd-action-row">
+      <button type="button" class="load-example">Load Curated Example</button>
       <button type="button" class="run-structured">Run Structured Input</button>
     </div>
-    <div class="results">
-      <div class="image-panel dual">
+  </div>
+
+  <details class="dd-advanced">
+    <summary>Advanced preset notebook</summary>
+    <div class="dd-advanced-grid">
+      <label>
+        <span>Model Preset</span>
+        <select class="preset-select"></select>
+      </label>
+      <dl class="preset-meta"></dl>
+    </div>
+  </details>
+
+  <p class="lab-status is-idle" role="status">Waiting for the first notebook run.</p>
+
+  <div class="dd-results">
+    <div class="dd-image-stack dd-image-stack-dual">
+      <figure class="dd-figure">
         <img class="example-image" alt="arithmetic example">
+        <figcaption>Operator-overlaid input</figcaption>
+      </figure>
+      <figure class="dd-figure">
         <img class="result-image" alt="predicted arithmetic result">
-      </div>
-      <div class="text-panel">
-        <p class="prediction"></p>
-        <p class="confidence"></p>
-        <p class="explanation"></p>
-      </div>
+        <figcaption>Predicted result raster</figcaption>
+      </figure>
     </div>
-    <div class="visuals">
+    <div class="dd-readout">
+      <p class="prediction"></p>
+      <p class="confidence"></p>
+      <p class="preset-label"></p>
+      <p class="explanation"></p>
+      <dl class="example-meta"></dl>
+    </div>
+  </div>
+
+  <div class="dd-visuals">
+    <section class="dd-visual-panel">
+      <h3>Feature Maps</h3>
+      <p>Intermediate responses from the chosen arithmetic preset.</p>
       <div class="visual-group feature-maps"></div>
+    </section>
+    <section class="dd-visual-panel">
+      <h3>Prototype Notes</h3>
+      <p>Class means, first-layer views, and arithmetic context from the notebook pipeline.</p>
       <div class="visual-group prototype"></div>
-    </div>
-  </article>
+    </section>
+    <section class="dd-visual-panel">
+      <h3>Comparison Strip</h3>
+      <p>Input scene, source digits, operator glyph, and the predicted result image all in one notebook strip.</p>
+      <div class="visual-group comparison"></div>
+    </section>
+  </div>
 </section>
 
 <script src="{{ url_for('static', filename='js/doubledigits.js') }}" defer></script>
