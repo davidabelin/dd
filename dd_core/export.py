@@ -1,4 +1,10 @@
-"""Shared export helpers for CLI batches and visualization artifacts."""
+"""Filesystem export helpers for Double-digits artifacts.
+
+This module owns the stable on-disk contracts used by maintainer workflows:
+generated example bundles and exported visualization images. The CLI is the
+primary caller, but the exported shapes and filenames are part of the broader
+maintainer documentation because downstream scripts may consume them directly.
+"""
 
 from __future__ import annotations
 

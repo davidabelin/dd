@@ -1,4 +1,25 @@
-"""Notebook-derived Keras models and runtime wrappers for Double-digits."""
+"""Notebook-derived Keras models and runtime wrappers for Double-digits.
+
+Responsibility
+--------------
+Register notebook-lineage presets, build level-specific datasets, train and
+cache artifact-backed classifiers, and normalize prediction/explainability
+behavior across the single-digit, double-digit, and arithmetic levels.
+
+Key dependencies
+----------------
+- ``dd_core`` for scene semantics and example construction
+- ``dd_models.keras_backend`` for the standalone Keras runtime
+
+Important invariants
+--------------------
+- ``double`` and ``arithmetic`` are whole-scene classifiers with ``0..99``
+  class spaces
+- artifact naming comes from the preset registry and is part of the runtime
+  contract
+- cloud usage may be read-only, so missing artifacts must fail clearly when
+  training is disabled
+"""
 
 from __future__ import annotations
 
@@ -22,7 +43,29 @@ Builder = Callable[[], Model]
 
 @dataclass(slots=True)
 class InferenceResult:
-    """Normalized inference payload shared by the web app and CLI."""
+    """Canonical inference payload shared by the web app and CLI.
+
+    Attributes
+    ----------
+    level : str
+        Requested level token.
+    preset_name : str
+        Name of the preset that produced the prediction.
+    prediction : dict[str, Any]
+        Level-specific prediction payload.
+    confidence : float
+        Confidence score for the top prediction.
+    top_classes : list[dict[str, Any]]
+        Ranked top-class summary used for inspection and debugging.
+    explanation : str
+        Human-readable explanation shown in the web app and CLI.
+    input_image : numpy.ndarray
+        Original scene image passed into the classifier.
+    example : Example
+        Example object that supplied the scene and structured metadata.
+    result_image_uri : str or None
+        Optional rendered arithmetic result image.
+    """
 
     level: str
     preset_name: str
@@ -37,7 +80,12 @@ class InferenceResult:
 
 @dataclass(frozen=True, slots=True)
 class ModelPreset:
-    """One notebook-derived model preset with training defaults and metadata."""
+    """Registry record for one notebook-derived preset.
+
+    The preset registry is a maintainer-facing contract: it defines notebook
+    lineage, artifact naming, input-shape expectations, and default training
+    sizes for each supported model family.
+    """
 
     name: str
     level: str
@@ -58,7 +106,11 @@ class ModelPreset:
 
 @dataclass(slots=True)
 class PreparedDataset:
-    """Prepared train/test arrays for one supported Double-digits level."""
+    """Prepared train/test arrays for one supported level.
+
+    The arrays in this dataclass have already been normalized and reshaped into
+    the form expected by the target preset family.
+    """
 
     level: str
     train_images: np.ndarray
@@ -87,6 +139,9 @@ def _apply_operator_overlay_batch(images: np.ndarray, operator_ids: np.ndarray) 
     for index, operator_name in enumerate(operator_ids):
         scene = output[index]
         if operator_name == "multiply":
+            # Preserve the notebook-era hand-drawn glyph math rather than
+            # substituting a font or vector overlay. The visual quirks are part
+            # of the historical data-generation contract.
             for row in range(11, 18):
                 scene[28 - row, row + 14] = 255
                 scene[row, row + 14] = 255
@@ -637,7 +692,19 @@ DEFAULT_PRESETS = {
 
 
 def list_training_presets(level: str | None = None) -> list[dict[str, Any]]:
-    """Return serializable metadata for the available notebook-derived presets."""
+    """Return serializable preset metadata.
+
+    Parameters
+    ----------
+    level : str or None, optional
+        Optional level filter.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        JSON-friendly preset summaries used by the CLI and web preset metadata
+        endpoint.
+    """
 
     items = []
     for preset in PRESETS.values():
@@ -659,7 +726,12 @@ def list_training_presets(level: str | None = None) -> list[dict[str, Any]]:
 
 
 class NotebookClassifier:
-    """One cached notebook-derived Keras model with training and inference helpers."""
+    """Artifact-backed wrapper around one notebook-derived preset.
+
+    The classifier owns preset validation, artifact paths, optional training,
+    prediction helpers, activation extraction, and first-layer inspection
+    behavior.
+    """
 
     def __init__(
         self,
@@ -669,6 +741,20 @@ class NotebookClassifier:
         cache_artifact: bool = True,
         allow_training: bool = True,
     ) -> None:
+        """Initialize one preset-specific classifier wrapper.
+
+        Parameters
+        ----------
+        models_dir : str
+            Directory containing cached ``.keras`` and ``.json`` artifacts.
+        preset_name : str
+            Name of the preset registry entry to bind.
+        cache_artifact : bool, default=True
+            Whether on-disk artifacts should be reused and saved.
+        allow_training : bool, default=True
+            Whether missing artifacts may be trained in this runtime.
+        """
+
         if preset_name not in PRESETS:
             raise KeyError(f"Unknown model preset: {preset_name}")
         self.spec = PRESETS[preset_name]
@@ -881,6 +967,8 @@ class NotebookClassifier:
             return items
         flattened = activation.reshape((activation.shape[0], -1))[0]
         if "flatten" in layer_name and flattened.size == image_shape[0] * image_shape[1]:
+            # When the flatten layer still maps exactly onto the input raster,
+            # preserve that geometry so the browser view remains interpretable.
             items.append({"name": layer_name, "image": flattened.reshape(image_shape)})
             return items
         items.append({"name": layer_name, "image": _reshape_vector_to_grid(flattened)})
@@ -901,6 +989,8 @@ class NotebookClassifier:
         """Build the configured preset, including special handling for mixedNN."""
 
         if self.spec.name == "double_project_mixed":
+            # The mixed preset depends on a trained base CNN, mirroring the
+            # notebook lineage instead of pretending it is an isolated model.
             base_classifier = NotebookClassifier(
                 models_dir=str(self.models_dir),
                 preset_name="double_project_cnn",
@@ -948,9 +1038,26 @@ def _reshape_vector_to_grid(values: np.ndarray) -> np.ndarray:
 
 
 class BaselineRuntime:
-    """Notebook-derived inference runtime for the guided Double-digits app."""
+    """Notebook-derived inference runtime for the guided Double-digits app.
+
+    The runtime is shared by the web service and visualization pipeline and is
+    responsible for selecting the correct preset family for each supported
+    level.
+    """
 
     def __init__(self, *, models_dir: str, cache_artifact: bool = True, allow_training: bool = True) -> None:
+        """Initialize the shared runtime.
+
+        Parameters
+        ----------
+        models_dir : str
+            Directory containing cached model artifacts.
+        cache_artifact : bool, default=True
+            Whether classifiers should reuse on-disk artifacts.
+        allow_training : bool, default=True
+            Whether missing artifacts may trigger local training.
+        """
+
         self.examples = ExampleCatalog()
         self.models_dir = str(models_dir)
         self.cache_artifact = bool(cache_artifact)

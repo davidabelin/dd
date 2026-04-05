@@ -1,4 +1,8 @@
-"""Module entrypoint for ``python -m dd_cli``."""
+"""Console-script bootstrap for ``python -m dd_cli``.
+
+This wrapper keeps the process entrypoint small while routing all real command
+construction and execution logic through ``dd_cli.app``.
+"""
 
 from __future__ import annotations
 

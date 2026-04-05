@@ -2,6 +2,8 @@
 
 Status refresh: 2026-04-05
 
+> Archival reference: the canonical maintainer documentation now lives in [docs/maintainer/README.md](maintainer/README.md). Use this file as a migration ledger and notebook-lineage map, not as the primary maintainer entrypoint.
+
 This is the working ledger for notebook-to-`dd` migration. It is grouped by capability so later phases can answer where each notebook feature now lives without reopening the notebooks.
 
 ## Source repos

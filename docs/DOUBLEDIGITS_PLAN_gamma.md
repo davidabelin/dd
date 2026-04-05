@@ -1,5 +1,7 @@
 # Plan Gamma: CLI-First MNIST Execution
 
+> Archival reference: the canonical maintainer documentation now lives in [docs/maintainer/README.md](maintainer/README.md). This phase plan is retained as implementation history.
+
 ## Summary
 - Execute the migration as code and docs, not as another planning pass.
 - Restore the runtime to MNIST-only behavior derived from the notebooks.

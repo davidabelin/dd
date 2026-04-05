@@ -2,6 +2,8 @@
 # *Phase Alpha: The "Migration"*
 # **double-digits --> dd**
 
+> Archival reference: the canonical maintainer documentation now lives in [docs/maintainer/README.md](maintainer/README.md). This phase plan is retained as implementation history.
+
 ## Summary
 - Build `dd` as a standalone Flask-based lab that follows the AIX sibling-arm pattern, but use the public AIX slug `doubledigits` rather than `dd` so the arm reads clearly in the hub and routes.
 - Make v1 a guided interactive lab, not just a calculator and not a research console: Level 1 covers single digits, Level 2 covers two-digit composition, and Level 3 introduces controlled arithmetic.

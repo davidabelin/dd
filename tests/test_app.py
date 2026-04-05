@@ -1,3 +1,5 @@
+"""Web-route and mount-behavior tests for Double-digits."""
+
 from __future__ import annotations
 
 from werkzeug.test import Client

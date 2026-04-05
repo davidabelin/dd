@@ -2,6 +2,8 @@
 
 Status refresh: 2026-04-05
 
+> Archival reference: the canonical maintainer documentation now lives in [docs/maintainer/README.md](maintainer/README.md). This phase plan is retained as implementation history.
+
 ## Summary
 - Fidelity source stays locked to the legacy notebook set: `double_digits_with_MNIST.ipynb`, `minimal_convolution_double_digits.ipynb`, `digits_project.ipynb`, and `arithmetic_double_digits.ipynb`.
 - Gamma landed on April 4, 2026 and restored the MNIST-first shared runtime, CLI, and notebook-derived model flow, but it intentionally left the main web pass unfinished.

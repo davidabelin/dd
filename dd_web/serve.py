@@ -1,4 +1,9 @@
-"""Shared helpers for local Flask serving and CLI integration."""
+"""Shared helpers for local Flask serving and CLI integration.
+
+This module keeps local serving behavior aligned with the mounted AIX posture by
+providing path-prefix simulation and a small wrapper around the app factory used
+by ``run.py`` and ``python -m dd_cli serve``.
+"""
 
 from __future__ import annotations
 
@@ -16,9 +21,16 @@ DEFAULT_DEBUG = True
 
 
 class PathPrefixMiddleware:
-    """Strip one configured URL prefix so routes work behind dispatch-style mounts."""
+    """Strip one configured URL prefix before dispatching to Flask.
+
+    This keeps local development aligned with the mounted AIX deployment, where
+    the app effectively lives under `/doubledigits` rather than at the site
+    root.
+    """
 
     def __init__(self, wsgi_app, prefix: str) -> None:
+        """Store the wrapped WSGI app and normalized prefix."""
+
         self._app = wsgi_app
         self._prefix = "/" + str(prefix or "").strip().strip("/")
 

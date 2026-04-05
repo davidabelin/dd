@@ -1,4 +1,10 @@
-"""Flask application factory and shared configuration helpers."""
+"""Flask application factory and shared configuration helpers.
+
+This module owns the standalone and AIX-mounted app factory contract. It
+normalizes environment-driven configuration, builds the shared service layer,
+registers blueprints, and injects the template globals that keep the frontend
+mount-safe under `/doubledigits`.
+"""
 
 from __future__ import annotations
 
@@ -37,7 +43,19 @@ def _aix_page_url(base_url: str, path: str) -> str:
 
 
 def default_app_config(root: Path | None = None) -> dict[str, Any]:
-    """Build the default application config from the current environment."""
+    """Build the default Flask config mapping.
+
+    Parameters
+    ----------
+    root : pathlib.Path or None, optional
+        Optional project root override used mainly by tests.
+
+    Returns
+    -------
+    dict[str, Any]
+        Environment-normalized config used by both the Flask app factory and
+        CLI service construction.
+    """
 
     project_root = Path(root) if root is not None else Path(__file__).resolve().parents[1]
     return {
@@ -50,7 +68,20 @@ def default_app_config(root: Path | None = None) -> dict[str, Any]:
 
 
 def create_app(config: dict | None = None) -> Flask:
-    """Create the standalone Double-digits Flask application."""
+    """Create the Double-digits Flask application.
+
+    Parameters
+    ----------
+    config : dict or None, optional
+        Optional configuration overrides layered on top of the environment-based
+        defaults.
+
+    Returns
+    -------
+    flask.Flask
+        Configured Flask application that works both standalone and when
+        mounted by AIX.
+    """
 
     app = Flask(__name__, template_folder="templates", static_folder="static")
     app.config.from_mapping(default_app_config())
@@ -74,6 +105,16 @@ def create_app(config: dict | None = None) -> Flask:
 
     @app.context_processor
     def inject_template_globals() -> dict[str, Any]:
+        """Inject mount-safe template globals for navigation and frontend JS.
+
+        Returns
+        -------
+        dict[str, Any]
+            Template globals containing AIX navigation URLs plus the
+            ``mountBase`` and ``apiBase`` values consumed by the browser
+            frontend.
+        """
+
         hub_url = _normalize_base_url(app.config.get("AIX_HUB_URL", "/"))
         mount_base = (request.script_root or "").rstrip("/")
         examples_url = url_for("api.list_examples")

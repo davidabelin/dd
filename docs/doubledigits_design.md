@@ -2,6 +2,8 @@
 
 Status refresh: 2026-04-05
 
+> Archival reference: the canonical maintainer documentation now lives in [docs/maintainer/README.md](maintainer/README.md). Use this file for historical design context, not as the primary maintainer entrypoint.
+
 ## Current product shape
 - The project is a guided lab plus a notebook-fidelity CLI, not a notebook host.
 - The runtime has been moved back onto MNIST rather than the temporary sklearn digits fallback.

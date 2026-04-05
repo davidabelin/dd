@@ -1,4 +1,9 @@
-"""Argparse-driven command-line interface for Double-digits."""
+"""Argparse-driven command-line interface for Double-digits.
+
+This module exposes the canonical maintainer command surface for the repo. It
+shares runtime, rendering, and export layers with the web app so CLI behavior
+and browser behavior remain aligned.
+"""
 
 from __future__ import annotations
 

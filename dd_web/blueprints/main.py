@@ -1,4 +1,9 @@
-"""HTML routes for the Double-digits standalone app."""
+"""HTML routes for the Double-digits app.
+
+The same routes support standalone local usage and mounted AIX usage. The page
+template depends on server-rendered navigation links and frontend config rather
+than hard-coded route assumptions.
+"""
 
 from __future__ import annotations
 

@@ -1,4 +1,9 @@
-"""JSON endpoints for Double-digits examples, inference, and visualizations."""
+"""JSON endpoints for examples, inference, and visualizations.
+
+These handlers expose the stable HTTP contract used by the standalone app, the
+AIX-mounted `/doubledigits` service, and the browser frontend running inside
+that mounted path.
+"""
 
 from __future__ import annotations
 

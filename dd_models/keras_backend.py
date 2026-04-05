@@ -1,4 +1,9 @@
-"""Shared Keras bootstrap helpers for notebook-derived MNIST models."""
+"""Shared Keras bootstrap helpers for notebook-derived MNIST models.
+
+This module centralizes backend selection and thread-count defaults so the same
+runtime posture is used during local development, CLI training, tests, and the
+App Engine deployment mounted through AIX.
+"""
 
 from __future__ import annotations
 

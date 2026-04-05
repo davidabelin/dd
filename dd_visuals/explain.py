@@ -1,4 +1,9 @@
-"""Visualization payload builders for notebook-derived Double-digits scenes."""
+"""Visualization payload builders for notebook-derived Double-digits scenes.
+
+The model layer produces activations, class means, and weight maps. This module
+packages those outputs into stable JSON-friendly structures used by the web API
+and CLI export flows.
+"""
 
 from __future__ import annotations
 
@@ -15,7 +20,25 @@ VISUALIZATION_KINDS = ("feature_maps", "prototype", "comparison")
 
 
 def build_visualization(kind: str, *, runtime: BaselineRuntime, inference: InferenceResult) -> dict[str, Any]:
-    """Build one supported visualization payload for an inference result."""
+    """Build one supported visualization payload.
+
+    Parameters
+    ----------
+    kind : str
+        Requested visualization family. Supported values are listed in
+        ``VISUALIZATION_KINDS``.
+    runtime : BaselineRuntime
+        Shared runtime used to recover the classifier associated with the
+        inference preset.
+    inference : InferenceResult
+        Canonical inference payload for the selected example.
+
+    Returns
+    -------
+    dict[str, Any]
+        JSON-friendly visualization payload consumed by the web API and CLI
+        export flows.
+    """
 
     normalized = str(kind or "feature_maps").strip().lower()
     classifier = runtime.classifier_for_level(inference.level, preset=inference.preset_name)

@@ -1,4 +1,13 @@
-"""Constants shared across the Double-digits lab."""
+"""Shared constants for the Double-digits lab.
+
+This module defines the stable vocabulary used across the repo: level names,
+scene shapes, supported operators, and the curated example catalog consumed by
+the web app, CLI, and tests.
+
+Because AIX mounts this repo by interface rather than by copying code, these
+constants are part of the public documentation contract for the standalone and
+mounted `/doubledigits` deployments alike.
+"""
 
 from __future__ import annotations
 

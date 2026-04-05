@@ -1,3 +1,5 @@
+"""Core runtime and visualization contract tests for Double-digits."""
+
 from __future__ import annotations
 
 from dd_core.constants import ARITHMETIC_SCENE_SIZE, DIGIT_SIZE, DOUBLE_SCENE_SIZE

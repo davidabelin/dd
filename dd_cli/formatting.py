@@ -1,4 +1,9 @@
-"""Formatting helpers for Double-digits CLI commands."""
+"""Formatting helpers for CLI text output.
+
+The JSON payloads emitted by the CLI are the machine-readable contract. These
+helpers provide human-readable summaries of the same payloads without changing
+their underlying structure.
+"""
 
 from __future__ import annotations
 

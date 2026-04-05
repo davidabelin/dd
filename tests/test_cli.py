@@ -1,3 +1,5 @@
+"""CLI contract tests for Double-digits."""
+
 from __future__ import annotations
 
 import json

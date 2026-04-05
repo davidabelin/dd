@@ -1,4 +1,15 @@
-"""Image composition and encoding helpers for Double-digits."""
+"""Image composition and encoding helpers for Double-digits.
+
+This module converts MNIST digit tiles and model outputs into notebook-style
+scene rasters, result rasters, PNG bytes, and browser-safe data URIs.
+
+Important invariants
+--------------------
+- scene composition uses ``28x28`` digits and ``28x56`` composed scenes
+- operator drawing intentionally follows notebook-era placement rules
+- display serialization preserves the project color conventions:
+  ``binary_r``, ``viridis``, and ``bone``
+"""
 
 from __future__ import annotations
 

@@ -1,3 +1,5 @@
+"""Shared pytest fixtures for Double-digits web and model tests."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,6 +17,8 @@ from dd_web import create_app
 
 @pytest.fixture(scope="session")
 def shared_models_dir(tmp_path_factory):
+    """Provide a shared temp directory seeded with shipped model artifacts."""
+
     target = tmp_path_factory.mktemp("shared-models")
     source = ROOT / "models"
     for pattern in ("*.keras", "*.json"):
@@ -25,6 +29,8 @@ def shared_models_dir(tmp_path_factory):
 
 @pytest.fixture
 def app(tmp_path: Path, shared_models_dir: Path, monkeypatch):
+    """Build a test Flask app with tiny training overrides and seeded artifacts."""
+
     for level in ("SINGLE", "DOUBLE", "ARITHMETIC"):
         monkeypatch.setenv(f"DOUBLEDIGITS_TRAIN_SIZE_{level}", "64")
         monkeypatch.setenv(f"DOUBLEDIGITS_TEST_SIZE_{level}", "16")
@@ -42,4 +48,6 @@ def app(tmp_path: Path, shared_models_dir: Path, monkeypatch):
 
 @pytest.fixture
 def client(app):
+    """Provide a Flask test client bound to the configured DD app."""
+
     return app.test_client()

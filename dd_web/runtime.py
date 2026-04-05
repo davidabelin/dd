@@ -1,4 +1,10 @@
-"""Runtime service for the Double-digits guided lab."""
+"""Web-facing runtime service for the Double-digits guided lab.
+
+``DoubleDigitsService`` is the orchestration layer that keeps the Flask
+blueprints thin. It exposes example listing, preset inspection, inference,
+visualization, and lightweight health checks while lazy-loading the heavier
+model runtime only when needed.
+"""
 
 from __future__ import annotations
 
@@ -10,9 +16,26 @@ from dd_core.examples import ExampleCatalog
 
 
 class DoubleDigitsService:
-    """Expose example, preset, inference, and visualization flows for the web app."""
+    """Expose example, preset, inference, and visualization flows.
+
+    The service keeps route handlers thin and owns the lazy transition from
+    lightweight example/preset calls into the heavier runtime-backed inference
+    and visualization path.
+    """
 
     def __init__(self, *, models_dir: str, cache_artifact: bool = True, allow_training: bool = True) -> None:
+        """Initialize the web-facing service contract.
+
+        Parameters
+        ----------
+        models_dir : str
+            Directory containing cached model artifacts.
+        cache_artifact : bool, default=True
+            Whether artifact-backed classifiers should reuse on-disk models.
+        allow_training : bool, default=True
+            Whether missing artifacts may be trained in this runtime.
+        """
+
         self.examples = ExampleCatalog()
         self.models_dir = str(models_dir)
         self.cache_artifact = bool(cache_artifact)

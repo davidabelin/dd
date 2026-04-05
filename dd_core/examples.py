@@ -1,4 +1,17 @@
-"""Deterministic MNIST example generation for the Double-digits lab."""
+"""Deterministic example construction for the Double-digits lab.
+
+This module is the canonical source of scene semantics. It turns raw MNIST
+records into curated, structured, and generated ``Example`` objects for the
+``single``, ``double``, and ``arithmetic`` levels.
+
+Important invariants
+--------------------
+- ``single`` scenes remain raw ``28x28`` MNIST digits.
+- ``double`` and ``arithmetic`` scenes are composed whole-scene ``28x56``
+  images.
+- arithmetic semantics intentionally preserve notebook behavior, including
+  larger-minus-smaller subtraction and the ``99`` divide-by-zero sentinel.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +26,31 @@ from dd_core.render import compose_pair, number_to_image, operator_canvas, overl
 
 
 def get_results(left_digit: int, right_digit: int, operator: str) -> dict[str, Any]:
-    """Return notebook-style arithmetic result metadata for one scene."""
+    """Return notebook-style arithmetic result metadata.
+
+    Parameters
+    ----------
+    left_digit : int
+        Left operand digit.
+    right_digit : int
+        Right operand digit.
+    operator : str
+        Arithmetic operator token. Supported values are the keys of
+        ``dd_core.constants.OPERATORS``.
+
+    Returns
+    -------
+    dict[str, Any]
+        Dictionary with ``result`` and ``display_text`` fields.
+
+    Notes
+    -----
+    This helper deliberately preserves notebook arithmetic semantics:
+
+    - subtraction uses larger-minus-smaller so results stay non-negative
+    - division uses larger-divided-by-smaller
+    - division by zero yields the notebook sentinel value ``99``
+    """
 
     left = int(left_digit)
     right = int(right_digit)
@@ -74,7 +111,27 @@ def getOperator(operator: str) -> np.ndarray:
 
 @dataclass(slots=True)
 class Example:
-    """One resolved guided-lab example and its serialized display metadata."""
+    """One resolved guided-lab example.
+
+    Attributes
+    ----------
+    id : str
+        Stable example identifier used by the web API and CLI.
+    level : str
+        One of ``single``, ``double``, or ``arithmetic``.
+    title : str
+        Human-readable title for the guided UI.
+    image : numpy.ndarray
+        Backing grayscale image array for the example scene.
+    metadata : dict[str, Any]
+        Level-specific structured metadata that downstream serializers preserve.
+    explanation : str
+        Human-readable explanation of what the example represents.
+    display_cmap : str, default="binary_r"
+        Preferred display colormap when serialized for browser or CLI output.
+    comparison_sources : list[dict[str, Any]]
+        Supporting images used by the comparison visualization.
+    """
 
     id: str
     level: str
@@ -99,7 +156,14 @@ class Example:
 
 
 class ExampleCatalog:
-    """Build guided examples and structured notebook-style MNIST scenarios."""
+    """Build guided examples and structured notebook-style MNIST scenarios.
+
+    Notes
+    -----
+    This is the canonical scene-construction layer for both the standalone DD
+    app and the AIX-mounted `/doubledigits` lab. New scene semantics should be
+    centralized here rather than split between the web and CLI surfaces.
+    """
 
     def list_examples(self, level: str, *, count: int | None = None) -> list[dict[str, Any]]:
         """List curated examples for one supported level."""

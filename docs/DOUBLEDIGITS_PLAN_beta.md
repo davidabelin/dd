@@ -2,6 +2,8 @@
 # *Phase Beta: The "Migration Ledger"*
 # **notebooks -> ledger -> Gamma execution**
 
+> Archival reference: the canonical maintainer documentation now lives in [docs/maintainer/README.md](maintainer/README.md). This phase plan is retained as implementation history.
+
 ## Summary
 - Convert the current notebook-level migration notes into a complete working ledger that tracks every relevant notebook-derived capability, its current `dd` status, its target destination, and its eventual terminal exposure.
 - Keep Beta organizational only: no new runtime behavior, no `dd_cli` package yet, and no additional notebook extraction in this phase.

@@ -1,5 +1,7 @@
 # Double-digits Model and Artifact Provenance
 
+> Archival reference: the canonical maintainer documentation now lives in [docs/maintainer/README.md](maintainer/README.md). Use this file for provenance detail, not as the primary maintainer entrypoint.
+
 ## Current data source
 - The live runtime is now MNIST-only.
 - `dd_core.dataset` loads the raw `train` and `test` MNIST splits through standalone Keras.
