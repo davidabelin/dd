@@ -483,3 +483,275 @@ code {
     align-items: stretch;
   }
 }
+
+/* Compact AIX Labs UI pass. */
+:root {
+  --dd-grid: rgba(24, 55, 52, 0.06);
+  --dd-shadow: 0 9px 20px rgba(17, 23, 21, 0.08);
+}
+
+body.dd-app {
+  font-size: 0.86rem;
+  background-size: auto, 22px 22px, 22px 22px, auto, auto;
+}
+
+.dd-shell-header,
+.dd-shell-footer,
+.dd-main {
+  width: min(980px, calc(100vw - 1.4rem));
+}
+
+.dd-shell-header {
+  gap: 0.62rem;
+  padding: 0.74rem 0 0.42rem;
+}
+
+.dd-brand {
+  font-size: 0.86rem;
+}
+
+.dd-shell-nav,
+.dd-footer-links {
+  gap: 0.48rem;
+}
+
+.dd-shell-nav a,
+.dd-footer-links a {
+  font-size: 0.8rem;
+}
+
+.dd-main {
+  padding: 0.5rem 0 1.55rem;
+  gap: 0.68rem;
+}
+
+.dd-shell-footer {
+  padding: 0 0 1rem;
+}
+
+.dd-shell-footer-inner {
+  gap: 0.6rem;
+  padding-top: 0.66rem;
+}
+
+.dd-panel {
+  border-radius: 12px;
+  background-size: auto, 14px 14px, 14px 14px;
+}
+
+.dd-hero {
+  gap: 0.78rem;
+  padding: 0.86rem 0.95rem;
+}
+
+.dd-hero h1 {
+  font-size: clamp(1.05rem, 2.2vw, 1.52rem);
+}
+
+.dd-lab h2 {
+  font-size: clamp(0.92rem, 1.6vw, 1.08rem);
+}
+
+.dd-visual-panel h3 {
+  font-size: 0.94rem;
+}
+
+.dd-kicker,
+.dd-section-tag,
+.dd-runbook span {
+  margin-bottom: 0.3rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.dd-lede,
+.dd-section-note,
+.dd-visual-panel p,
+.dd-readout p,
+.dd-ledger-list,
+.dd-jumpbar a,
+.dd-advanced-grid span,
+.dd-figure figcaption,
+.preset-meta,
+.example-meta,
+.lab-status,
+.visual-card p {
+  font-size: 0.82rem;
+  line-height: 1.36;
+}
+
+.dd-ledger-title {
+  margin-bottom: 0.42rem;
+  font-size: 0.74rem;
+}
+
+.dd-ledger-list {
+  gap: 0.32rem;
+  padding-left: 0.95rem;
+}
+
+.dd-jumpbar {
+  gap: 0.48rem;
+  padding: 0.58rem 0.72rem;
+}
+
+.dd-jumpbar a {
+  padding: 0.32rem 0.58rem;
+}
+
+.dd-lab {
+  gap: 0.68rem;
+  padding: 0.82rem 0.92rem;
+}
+
+.dd-lab-heading {
+  gap: 0.68rem;
+}
+
+.dd-runbook {
+  min-width: 135px;
+  border-radius: 10px;
+  padding: 0.55rem 0.68rem;
+  gap: 0.22rem;
+}
+
+.dd-controls {
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.55rem;
+}
+
+.dd-controls label,
+.dd-advanced-grid label,
+.dd-readout,
+.dd-image-stack,
+.visual-group,
+.visual-card,
+.dd-visual-panel {
+  gap: 0.42rem;
+}
+
+.dd-controls span,
+.dd-advanced-grid span {
+  font-size: 0.78rem;
+}
+
+.dd-app select,
+.dd-app button {
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+
+.dd-app select {
+  min-height: 2.05rem;
+  padding: 0.34rem 0.48rem;
+}
+
+.dd-app button {
+  min-height: 2.05rem;
+  padding: 0.38rem 0.62rem;
+  box-shadow: 0 5px 12px rgba(29, 103, 96, 0.14);
+}
+
+.dd-action-row {
+  gap: 0.46rem;
+}
+
+.dd-action-row button {
+  flex-basis: 150px;
+}
+
+.dd-advanced {
+  border-radius: 10px;
+  padding: 0.1rem 0.64rem 0.64rem;
+}
+
+.dd-advanced summary {
+  padding: 0.55rem 0 0.28rem;
+  font-size: 0.8rem;
+}
+
+.dd-advanced-grid {
+  grid-template-columns: minmax(180px, 245px) 1fr;
+  gap: 0.7rem;
+}
+
+.preset-meta,
+.example-meta {
+  gap: 0.32rem 0.48rem;
+}
+
+.lab-status {
+  padding: 0.38rem 0.6rem;
+}
+
+.dd-results {
+  grid-template-columns: minmax(220px, 360px) 1fr;
+  gap: 0.68rem;
+}
+
+.dd-figure {
+  gap: 0.32rem;
+}
+
+.example-image,
+.result-image,
+.visual-thumb {
+  min-height: 92px;
+  border-radius: 10px;
+}
+
+.prediction {
+  font-size: 0.9rem;
+}
+
+.confidence,
+.preset-label {
+  font-size: 0.78rem;
+}
+
+.dd-visuals {
+  grid-template-columns: repeat(3, minmax(175px, 1fr));
+  gap: 0.68rem;
+}
+
+.dd-visual-panel {
+  border-radius: 11px;
+  padding: 0.62rem;
+}
+
+.visual-card {
+  border-radius: 10px;
+  padding: 0.52rem;
+}
+
+.visual-card h4 {
+  font-size: 0.78rem;
+}
+
+code {
+  border-radius: 5px;
+  padding: 0.05rem 0.24rem;
+}
+
+@media (max-width: 980px) {
+  .dd-hero,
+  .dd-lab-heading,
+  .dd-results,
+  .dd-visuals,
+  .dd-advanced-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .dd-shell-header,
+  .dd-main,
+  .dd-shell-footer {
+    width: min(100vw - 0.8rem, 980px);
+  }
+
+  .dd-hero,
+  .dd-lab {
+    padding: 0.72rem;
+  }
+}
